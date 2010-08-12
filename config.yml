@@ -1,9 +1,0 @@
-bot:
-    jid: 'yaru.bot@ya.ru'
-    pass: '6ZDa2LrnTr'
-    other_jid: 'svetlyak.40wt@gmail.com'
-    polling_interval: 120
-
-api:
-    token: '0ed5bd8204f94a898f2ea42a5816f26b'
-
