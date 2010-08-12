@@ -1,3 +1,7 @@
 #!/bin/bash
 
-env/bin/twistd -ny bot.tac
+if [ -e twistd.pid ]; then
+    kill `cat twistd.pid`
+fi
+
+bin/twistd --logfile=twistd.log -y bot.tac
