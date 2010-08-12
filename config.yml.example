@@ -1,0 +1,9 @@
+bot:
+    jid: 'yaru.bot@ya.ru'
+    pass: 'пароль'
+    other_jid: 'svetlyak.40wt@gmail.com'
+    polling_interval: 120
+
+api:
+    token: 'токен для доступа к ярушке'
+

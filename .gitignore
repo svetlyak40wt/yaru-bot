@@ -1,5 +1,6 @@
 *.pyc
 .*.swp
 *.pid
+config.yml
 pip-log.txt
 env
