@@ -15,3 +15,4 @@
 Все, что требуется, это запустить `./bootstrap.sh` создать, на основе примера, конфиг, а потом — `./run.sh`.
 
 [API]: http://clubs.ya.ru/ya/replies.xml?item_no=92391
+[yaru]: http://wow.ya.ru/
