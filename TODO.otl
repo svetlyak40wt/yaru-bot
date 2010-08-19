@@ -1,0 +1,29 @@
+Процедура регистрации
+	Пользователь добавляет бота в ростер
+	Бот видит, что его добавили, и
+		Если JID знаком, то не делает ничего.
+		Если такого JID не знает, то заводит в базе нового пользователя с этим JID
+			Добавляет запись в базу
+			Высылает URL на авторизацию через oAuth.
+
+Для авторизации сначала надо:
+	попросить пользователя пройти по урлу:
+	 https://oauth.yandex.ru/authorize?client_id=911aec2bd1f543e194d68bd916f2190c&response_type=code&state=alexander-artemenko@ya.ru
+	Потом принять его запрос
+	 http://yaru.svetlyak.ru/auth/?state=alexander-artemenko%40ya.ru&code=8626549
+	Отправить POST на https://oauth.yandex.ru/token
+	 с параметрами code=8626549&grant_type=authorization_code&client_id=911aec2bd1f543e194d68bd916f2190c
+	 и распарсить полученный JSON
+
+Структура базы:
+	User
+		id
+		jid
+		subscribed
+		auth_token
+		created_at
+		updated_at
+		lastseen_at
+
+Client ID бота
+	911aec2bd1f543e194d68bd916f2190c

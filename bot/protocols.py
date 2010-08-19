@@ -1,139 +1,35 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
+from __future__ import with_statement, absolute_import
 
 import datetime
 import os.path
 import pickle
 import re
 
-from bot.api import YaRuAPI
-from hashlib import md5
+from functools import wraps
+from . import messages, db
+from . models import User
 from pdb import set_trace
+from twisted.python.failure import Failure
 from twisted.python import log
+from twisted.words.protocols.jabber.jid import JID
 from twisted.words.xish import domish
 from wokkel import xmppim
 
 
 CHATSTATE_NS = 'http://jabber.org/protocol/chatstates'
-HASH_LENGTH = 2
-POST_HISTORY_LENGTH = 100
 
-class MessageProtocol(xmppim.MessageProtocol):
-    def __init__(self, cfg):
-        super(MessageProtocol, self).__init__()
-        self.jid = cfg['bot']['jid']
-        self.other_jid = cfg['bot']['other_jid']
-        self.cfg = cfg
-        self._datafile = os.path.expanduser('~/.yaru-bot')
-        self.posts = {} # map для хранения последних постов из френдленты
-        self.dt_to_post = [] # сортированный по времени список постов
 
-        self.load_state()
+class Request(object):
+    def __init__(self, message):
+        self.message = message
+        self.jid = JID(message['from'])
 
 
 
-    def load_state(self):
-        if os.path.exists(self._datafile):
-            with open(self._datafile) as file:
-                self.posts, self.dt_to_post = pickle.load(file)
-
-
-    def save_state(self):
-        with open(self._datafile, 'w') as file:
-            pickle.dump(
-                (self.posts, self.dt_to_post),
-                file
-            )
-
-
-    def onMessage(self, msg):
-        if msg['type'] == 'chat' and hasattr(msg, 'body') and msg.body:
-            command = unicode(msg.body)
-
-            if command == 'get':
-                self.process_new_posts()
-
-            if command == 'len':
-                self.send_plain(self.other_jid, 
-                    'len == %s' % len(self.parent._packetQueue))
-
-            match = re.match(r'#(?P<hash>[a-z0-9]{2}) (?P<text>.*)', command)
-            if match is not None:
-                hash, message = match.groups()
-                if hash in self.posts:
-                    post = self.posts[hash]
-                    post.reply(message)
-
-
-    def process_new_posts(self):
-        log.msg('Retriving posts from yaru.')
-
-        api = YaRuAPI(**self.cfg['api'])
-        for post in api.get_friend_feed():
-            post_date = post.updated
-            post_link = post.get_link('self')
-
-            post_hash = md5(post_link).hexdigest()[:HASH_LENGTH]
-            #log.msg('Post %s' % post_hash)
-
-            if post_hash in self.posts:
-                #log.msg('ignoring "%s"' % post_hash)
-                # не показываем посты которые уже были показаны
-                continue
-
-            self.posts[post_hash] = post
-            self.dt_to_post.append((post_date, post_hash))
-
-            to_remove = self.dt_to_post[:-POST_HISTORY_LENGTH]
-            self.dt_to_post = self.dt_to_post[-POST_HISTORY_LENGTH:]
-
-            for dt, hash in to_remove:
-                del self.posts[hash]
-
-            self.save_state()
-
-
-            parts = [
-                u'%s) %s, %s: ' % (post_hash, post.author, post.post_type)
-            ]
-            try:
-                html_parts = [
-                    u'<a href="%s">%s</a>) %s, %s: ' % (
-                        post.get_link('alternate'),
-                        post_hash,
-                        post.author,
-                        post.post_type
-                    )
-                ]
-            except:
-                set_trace()
-            title = post.title
-
-            content_type, content = post.content
-
-            if title:
-                parts[0] += title
-                html_parts[0] += title
-                if content:
-                    parts.append(content)
-                    html_parts.append(content)
-            else:
-                if content:
-                    parts[0] += content
-                    html_parts[0] += content
-
-            message = u'\n'.join(parts)
-
-            html_message = u'<br/>'.join(html_parts)
-            html_message = html_message.replace(u'&lt;', u'<')
-            html_message = html_message.replace(u'&gt;', u'>')
-
-            log.msg('Post %s: %s' % (post_hash, html_message.encode('utf-8')))
-            self.send_html(self.other_jid, message, html_message)
-
-
-
-    def create_message(self):
+class MessageCreatorMixIn(object):
+    """ MixIn to send plain text and HTML messages. """
+    def _create_message(self):
         msg = domish.Element((None, 'message'))
         import time
         msg['id'] = str(time.time())
@@ -142,7 +38,7 @@ class MessageProtocol(xmppim.MessageProtocol):
 
 
     def send_plain(self, jid, content):
-        msg = self.create_message()
+        msg = self._create_message()
         msg['to'] = jid
         msg['from'] = self.jid
         msg['type'] = 'chat'
@@ -152,7 +48,7 @@ class MessageProtocol(xmppim.MessageProtocol):
 
 
     def send_html(self, jid, body, html):
-        msg = self.create_message()
+        msg = self._create_message()
         msg['to'] = jid
         msg['from'] = self.jid
         msg['type'] = 'chat'
@@ -161,4 +57,158 @@ class MessageProtocol(xmppim.MessageProtocol):
         msg.addRawXml(unicode(html))
 
         self.send(msg)
+
+
+
+def require_auth_token(func):
+    """ Декоратор, который требует, чтобы о пользователе
+        были известны его яндекс-логин и авторизационный
+        токен.
+    """
+    @wraps(func)
+    def wrapper(self, request, **kwargs):
+        if not request.user.auth_token:
+            self.send_plain(request.jid.full(), messages.REQUIRE_AUTH_TOKEN % request.jid.userhost())
+        else:
+            return func(self, request, **kwargs)
+    return wrapper
+
+
+
+class CommandsMixIn(object):
+    """ Всевозможные команды, которые бот умеет понимать. """
+    def _get_command(self, text):
+        for aliases, func in CommandsMixIn._COMMANDS:
+            for alias in aliases:
+                match = alias.match(text)
+                if match is not None:
+                    return (
+                        func,
+                        dict((str(key), value) for key, value in match.groupdict().items())
+                    )
+        return None, None
+
+
+    @require_auth_token
+    def _cmd_help(self, request):
+        self.send_plain(request.jid.full(), messages.HELP)
+
+
+    @require_auth_token
+    def _cmd_reply(self, request, hash = None, text = None):
+        if hash in self.posts:
+            post = self.posts[hash]
+            post.reply(request.message)
+        else:
+            self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
+
+
+
+    _COMMANDS = (
+        (('help', u'помощь', 'справка'), _cmd_help),
+        ((r'#(?P<hash>[a-z0-9]{2}) (?P<text>.*)',), _cmd_reply),
+    )
+    _COMMANDS =  tuple(
+        (tuple(re.compile(alias) for alias in aliases), func)
+        for aliases, func in _COMMANDS
+    )
+
+
+
+class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn):
+    def __init__(self, cfg):
+        super(MessageProtocol, self).__init__()
+        self.jid = cfg['bot']['jid']
+        self.cfg = cfg
+
+
+    def onMessage(self, msg):
+        if msg['type'] == 'chat' and hasattr(msg, 'body') and msg.body:
+            request = Request(msg)
+            command = unicode(msg.body)
+
+            def _process_request(user):
+                if user is None:
+                    user = User(jid = request.jid.userhost())
+                    db.store.add(user)
+                    db.store.commit()
+
+                request.user = user
+
+                func, kwargs = self._get_command(command)
+
+                if func is not None:
+                    func(self, request, **kwargs)
+
+            db.store.find(User, User.jid == request.jid.userhost())\
+                .addCallback(lambda r: r.one().addCallback(_process_request))
+
+
+
+class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
+    def __init__(self, cfg):
+        super(PresenceProtocol, self).__init__()
+        self.jid = cfg['bot']['jid']
+        self.admins = cfg['bot'].get('admins', [])
+        self.cfg = cfg
+
+
+    def connectionInitialized(self):
+        super(PresenceProtocol, self).connectionInitialized()
+        self.update_presence()
+
+
+    def subscribeReceived(self, entity):
+        log.msg('Subscribe received from %s' % (entity.userhost()))
+        self.subscribe(entity)
+        self.subscribed(entity)
+        self.update_presence()
+
+
+    def subscribedReceived(self, entity):
+        log.msg('Subscribe received from %s' % (entity.userhost()))
+
+        def _user_found(user):
+            if user is None:
+                def _user_added(result):
+                    msg = u'Новый подписчик: %s' % entity.userhost()
+
+                    for a in self.admins:
+                        self.send_plain(a, msg)
+                    self.send_plain(entity.full(), messages.NEW_USER_WELCOME % entity.userhost())
+
+                user = User(jid = entity.userhost())
+                db.store.add(user)
+                db.store.commit().addCallback(_user_added)
+
+            else:
+                user.subscribed = True
+                db.store.add(user)
+                db.store.commit()
+                self.send_plain(entity.full(), messages.OLD_USER_WELCOME)
+
+
+        db.store.find(User, User.jid == entity.userhost()) \
+            .addCallback(lambda r: r.one().addCallback(_user_found))
+
+
+    def unsubscribeReceived(self, entity):
+        log.msg('Unsubscribe received from %s' % (entity.userhost()))
+        def _user_found(user):
+            if user is not None:
+                user.subscribed = False
+                db.store.add(user)
+                db.store.commit()
+
+        db.store.find(User, User.jid == entity.userhost()) \
+            .addCallback(lambda r: r.one().addCallback(_user_found))
+
+        self.unsubscribe(entity)
+        self.unsubscribed(entity)
+        self.update_presence()
+
+
+    def update_presence(self):
+        status = u'Мир, Дружба, Ярушка!'
+        self.available(None, None, {None: status})
 

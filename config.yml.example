@@ -1,9 +1,15 @@
 bot:
     jid: 'yaru.bot@ya.ru'
     pass: 'пароль'
-    other_jid: 'svetlyak.40wt@gmail.com'
     polling_interval: 120
+    admins:
+        - 'admin@example.com'
 
 api:
-    token: 'токен для доступа к ярушке'
+
+database:
+    driver: 'mysql'
+    db: 'yaru_bot'
+    user: 'yaru_bot'
+    passwd: 'yaru_bot'
 

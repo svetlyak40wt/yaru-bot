@@ -2,6 +2,7 @@
 .*.swp
 *.pid
 *.log
+.vim/ide.session
 .installed.cfg
 bin
 config.yml

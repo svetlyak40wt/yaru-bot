@@ -1,0 +1,4 @@
+CREATE TABLE users(id INTEGER AUTO_INCREMENT NOT NULL PRIMARY KEY, jid VARCHAR(100) NOT NULL, subscribed BOOLEAN DEFAULT False, yandex_login VARCHAR(100), auth_token VARCHAR(100), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, lastseen_at DATETIME NOT NULL);
+
+CREATE UNIQUE INDEX by_jid ON users (jid);
+
