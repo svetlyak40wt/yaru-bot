@@ -19,6 +19,10 @@ from storm import properties, info
 marker = object()
 
 
+def create_hash(url):
+    return unicode(md5(url).hexdigest()[:HASH_LENGTH])
+
+
 class Base( object ):
     """ Украдено отсюда: https://lists.ubuntu.com/archives/storm/2009-August/001161.html
     """
@@ -46,6 +50,9 @@ class Base( object ):
 
 
     def attach( self, store ):
+        if hasattr(store, 'store'):
+            store = store.store
+
         obj_info = info.get_obj_info( self )
         obj_info['store'] = store
         store._enable_change_notification( obj_info )
@@ -66,6 +73,7 @@ class User(Base):
     lastseen_at = DateTime(default = None)
 
     _posts_cache = defaultdict(dict)
+    _hash_cache = defaultdict(dict)
 
     def __init__(self, jid = None):
         self.jid = jid
@@ -80,11 +88,16 @@ class User(Base):
         post_link = PostLink(url)
         yield self.posts.add(post_link)
         User._posts_cache[self.id][url] = True
+        User._hash_cache[self.id][post_link.hash] = url
         returnValue(post_link)
 
 
     def is_post_registered(self, url):
         return url in User._posts_cache[self.id]
+
+
+    def get_post_url_by_hash(self, hash):
+        return User._hash_cache[self.id].get(hash)
 
 
 
@@ -98,7 +111,7 @@ class PostLink(Base):
 
     def __init__(self, url):
         self.url = unicode(url)
-        self.hash = unicode(md5(url).hexdigest()[:HASH_LENGTH])
+        self.hash = create_hash(url)
         self.created_at = datetime.datetime.utcnow()
 
 

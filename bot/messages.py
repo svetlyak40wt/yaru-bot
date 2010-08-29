@@ -5,7 +5,7 @@ NEW_USER_WELCOME = u"""Привет, я Джинн Ярушки.
 Для начала, дай мне доступ к своей Ярушечке.
 
 Для этого, пройди по URL:
-https://oauth.yandex.ru/authorize?client_id=911aec2bd1f543e194d68bd916f2190c&response_type=code&state=%s
+https://oauth.yandex.ru/authorize?client_id=%s&response_type=code&state=%s
 
 Если будут затруднения, напиши мне "помощь" или "help".
 """
@@ -27,7 +27,7 @@ HELP = u"""Я Джинн Ярушки, у тебя есть три желани�
 REQUIRE_AUTH_TOKEN = u"""Сначала, дай мне доступ к своей Ярушечке.
 
 Для этого, пройди по URL:
-https://oauth.yandex.ru/authorize?client_id=911aec2bd1f543e194d68bd916f2190c&response_type=code&state=%s
+https://oauth.yandex.ru/authorize?client_id=%s&response_type=code&state=%s
 """
 
 

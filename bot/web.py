@@ -5,6 +5,7 @@ from pdb import set_trace
 from twisted.internet import reactor
 from twisted.web.client import Agent
 from twisted.web.error import NoResource
+from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.http_headers import Headers
 from twisted.python import log
 from twisted.web import server, resource, client
@@ -15,12 +16,11 @@ from bot import db
 
 
 class WebRoot(resource.Resource):
+    isLeaf = True
     def __init__(self, bot):
         self.bot = bot
         resource.Resource.__init__(self)
 
-
-    isLeaf = True
     def render_GET(self, request):
         if 'state' in request.args and 'code' in request.args:
             jid = request.args['state'][0]
@@ -36,35 +36,44 @@ class WebRoot(resource.Resource):
                 postdata = urlencode(dict(
                     code = code,
                     grant_type = 'authorization_code',
-                    client_id = '911aec2bd1f543e194d68bd916f2190c',
+                    client_id = self.bot.client_id,
                 ))
             )
-            @db.transaction
-            def cb(store, data, *args, **kwargs):
+
+            def cb(data, *args, **kwargs):
                 data = simplejson.loads(data)
                 access_token = unicode(data['access_token'])
                 refresh_token = unicode(data['refresh_token'])
 
-                def _user_found(user):
+                @inlineCallbacks
+                def add_user(store):
+                    user = yield store.find(User, User.jid == unicode(jid))
+                    user = yield user.one()
+
                     user.auth_token = access_token
                     user.refresh_token = refresh_token
-                    store.add(user).addCallback(_user_updated).addErrback(log.err)
-                    #store.flush().addCallback(_user_updated).addErrback(log.err)
 
-                def _user_updated(result):
+                    yield store.add(user)
+
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
                     request.setHeader('Content-Type', 'text/html; charset=UTF-8')
                     request.write('<html>Спасибо за регистрацию, %s!</html>' % jid)
                     request.finish()
 
-                store.find(User, User.jid == unicode(jid))\
-                    .addCallback(lambda r: r.one().addCallback(_user_found).addErrback(log.err))\
-                    .addErrback(log.err)
+                db.pool.transact(add_user)
+
 
 
             def eb(data):
                 request.setHeader('Content-Type', 'text/html; charset=UTF-8')
-                message = 'ERROR from YaRu: %s, %s, %s' % (data.value.status, data.value.message, data.value.response)
+                if hasattr(data.value, 'status') and hasattr(data.value, 'response'):
+                    message = 'ERROR from YaRu: %s, %s, %s' % (
+                        data.value.status,
+                        data.value.message,
+                        data.value.response
+                    )
+                else:
+                    message = 'ERROR: %s' % data.value.message
                 request.write('<html>%s</html>' % message)
                 request.finish()
 

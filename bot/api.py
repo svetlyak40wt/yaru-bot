@@ -16,6 +16,18 @@ HOST = 'api-yaru.yandex.ru'
 
 
 
+def comment_post(api, post_url, message):
+    url = post_url + '/comment/'
+    el = ET.Element('{%(a)s}entry' % NAMESPACES)
+    ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
+    try:
+        api._auth_request(url, ET.tostring(el))
+    except urllib2.HTTPError, e:
+        if e.code != 201:
+            raise
+
+
+
 class Post(object):
     def __init__(self, xml, api):
         self._xml = xml
@@ -90,14 +102,7 @@ class Post(object):
 
 
     def reply(self, message):
-        url = self.get_link('self') + '/comment/'
-        el = ET.Element('{%(a)s}entry' % NAMESPACES)
-        ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
-        try:
-            self._api._auth_request(url, ET.tostring(el))
-        except urllib2.HTTPError, e:
-            if e.code != 201:
-                raise
+        comment_post(self._api, self.get_link('self'), message)
 
 
 

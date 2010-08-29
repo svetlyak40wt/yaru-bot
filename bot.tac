@@ -73,5 +73,5 @@ DiscoHandler().setHandlerParent(bot)
 VersionHandler('yaru-bot', '0.1.0').setHandlerParent(bot)
 
 web_site = server.Site(WebRoot(message_protocol))
-web_server = TCPServer(8081, web_site)
+web_server = TCPServer(config['web']['port'], web_site)
 web_server.setServiceParent(application)
