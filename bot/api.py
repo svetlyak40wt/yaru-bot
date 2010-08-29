@@ -15,6 +15,8 @@ NAMESPACES = {
 HOST = 'api-yaru.yandex.ru'
 
 
+class InvalidAuthToken(RuntimeError): pass
+
 
 def comment_post(api, post_url, message):
     url = post_url + '/comment/'
@@ -108,14 +110,19 @@ class Post(object):
 
 class YaRuAPI(object):
     def __init__(self, token):
-        self._ACCESS_TOKEN = token
+        self._AUTH_TOKEN = token
 
 
     def _auth_request(self, url, body=None):
         '''Создаёт авторизованный объект запроса.'''
-        return urllib2.urlopen(urllib2.Request(url, data=body, headers={
-            'Authorization': 'OAuth %s' % self._ACCESS_TOKEN
-        }))
+        try:
+            return urllib2.urlopen(urllib2.Request(url, data=body, headers={
+                'Authorization': 'OAuth %s' % self._AUTH_TOKEN
+            }))
+        except urllib2.HTTPError, e:
+            if e.code == 401:
+                raise InvalidAuthToken(e)
+            raise
 
 
     def _get_link(self, rel):

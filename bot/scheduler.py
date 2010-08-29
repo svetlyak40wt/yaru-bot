@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-from . api import YaRuAPI
+from . api import YaRuAPI, InvalidAuthToken
 from . import db
 from . models import User, PostLink
 from pdb import set_trace
@@ -16,7 +16,7 @@ class Scheduler(object):
 
         @inlineCallbacks
         def load_users(store):
-            results = yield store.find(User, User.subscribed == True)
+            results = yield store.find(User, User.subscribed == True, User.auth_token != None)
             results = yield results.all()
 
             for user in results:
@@ -65,15 +65,15 @@ class Scheduler(object):
 
     def process_new_posts(self):
         # цикл проверки постов в ярушке
-        log.msg('Retriving posts from yaru.')
-
         @inlineCallbacks
         def process_user_posts(store, user):
             user.attach(store)
             try:
                 api = YaRuAPI(user.auth_token)
 
-                for post in api.get_friend_feed():
+                posts = api.get_friend_feed()
+
+                for post in posts:
                     post_date = post.updated
                     post_link = unicode(post.get_link('self'))
 
@@ -119,8 +119,17 @@ class Scheduler(object):
 
                     log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
                     self.bot.send_html(user.jid, message, html_message)
+            except InvalidAuthToken:
+                user.auth_token = None
+                user.refresh_token = None
+                self.remove(user)
+                yield store.add(user)
+                yield store.flush()
             finally:
-                user.detach()
+                if user.jid in self.users:
+                    user.detach()
 
         for user in self.users.values():
+            log.msg('Retriving posts from yaru for: %s' % user.jid)
             db.pool.transact(process_user_posts, user)
+
