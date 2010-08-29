@@ -5,6 +5,7 @@ from pdb import set_trace
 from storm import tracer
 from storm.locals import *
 from storm.twisted.store import StorePool
+from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
 
@@ -23,6 +24,28 @@ class User(object):
 
     def __init__(self, name = None):
         self.name = name
+
+    @inlineCallbacks
+    def add_link(self, url):
+        link = UserLink(url)
+        yield self.links.add(link)
+        returnValue(link)
+
+
+class UserLink(object):
+    """
+    create table test2(test_id integer not null, url varchar(100) not null);
+    """
+    __storm_table__ = 'test2'
+    test_id = Int()
+    url = Unicode(primary = True)
+    user = DeferredReference(test_id, User.id)
+
+    def __init__(self, url= None):
+        self.url = url
+
+User.links = DeferredReferenceSet(User.id, UserLink.test_id)
+
 
 
 def main():
@@ -44,7 +67,14 @@ def main():
             yield add_user(store, u'Alexander')
             yield add_user(store, u'Maria')
 
-        pool.transact(add_users)
+        @inlineCallbacks
+        def add_link(store):
+            results = yield store.find(User, name = u'Alexander')
+            user = yield results.one()
+            link = yield user.add_link(u'http://ya.ru')
+            logger.debug('link: %r' % (link,))
+
+        pool.transact(add_link)
 
     pool.start().addCallback(pool_started)
 
