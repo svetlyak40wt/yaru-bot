@@ -6,6 +6,7 @@ from bot import db
 from hashlib import md5
 from pdb import set_trace
 from storm.locals import Int, Unicode, DateTime, Bool
+from storm.twisted.store import DeferredStore as Store
 from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
@@ -47,6 +48,7 @@ class Base( object ):
         store._remove_from_alive( obj_info )
         store._disable_change_notification( obj_info )
         store._disable_lazy_resolving( obj_info )
+        return self
 
 
     def attach( self, store ):
@@ -58,6 +60,7 @@ class Base( object ):
         store._enable_change_notification( obj_info )
         store._add_to_alive( obj_info )
         store._enable_lazy_resolving( obj_info )
+        return self
 
 
 
@@ -92,6 +95,22 @@ class User(Base):
         returnValue(post_link)
 
 
+    @inlineCallbacks
+    def unregister_post(self, hash):
+        result = yield Store.of(self).find(PostLink, PostLink.user_id == self.id, PostLink.hash == hash)
+        post_link = yield result.one()
+
+        if post_link is not None:
+            results = yield Store.of(self).find(PostLink, PostLink.url == post_link.url)
+            post_link = yield results.one()
+
+            def clear_cache(ignore):
+                del User._posts_cache[self.id][post_link.url]
+                del User._hash_cache[self.id][post_link.hash]
+
+            results.remove().addCallback(clear_cache)
+
+
     def is_post_registered(self, url):
         return url in User._posts_cache[self.id]
 
@@ -105,7 +124,7 @@ class PostLink(Base):
     __storm_table__ = 'post_links'
     url = Unicode(primary = True)
     hash = Unicode()
-    user_id = Int()
+    user_id = Int(allow_none = True)
     user = DeferredReference(user_id, User.id)
     created_at = DateTime()
 

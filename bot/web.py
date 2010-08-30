@@ -21,6 +21,7 @@ class WebRoot(resource.Resource):
         self.bot = bot
         resource.Resource.__init__(self)
 
+
     def render_GET(self, request):
         if 'state' in request.args and 'code' in request.args:
             jid = request.args['state'][0]
@@ -45,15 +46,16 @@ class WebRoot(resource.Resource):
                 access_token = unicode(data['access_token'])
                 refresh_token = unicode(data['refresh_token'])
 
+                user = [None]
                 @inlineCallbacks
                 def add_user(store):
-                    user = yield store.find(User, User.jid == unicode(jid))
-                    user = yield user.one()
+                    user[0] = yield store.find(User, User.jid == unicode(jid))
+                    user[0] = yield user[0].one()
 
-                    user.auth_token = access_token
-                    user.refresh_token = refresh_token
+                    user[0].auth_token = access_token
+                    user[0].refresh_token = refresh_token
 
-                    yield store.add(user)
+                    yield store.add(user[0])
 
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
                     request.setHeader('Content-Type', 'text/html; charset=UTF-8')

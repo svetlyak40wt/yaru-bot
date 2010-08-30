@@ -8,7 +8,7 @@ import re
 
 from functools import wraps
 from . import messages, db
-from . models import User
+from . models import User, PostLink
 from . api import YaRuAPI, comment_post
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -106,17 +106,30 @@ class CommandsMixIn(object):
     def _cmd_reply(self, request, hash = None, text = None):
         post_url = request.user.get_post_url_by_hash(hash)
 
-        if hash is None:
+        if post_url is None:
             self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
         else:
             api = YaRuAPI(request.user.auth_token)
             comment_post(api, post_url, text)
 
 
+    @require_auth_token
+    def _cmd_forget_post(self, request, hash = None):
+        post_url = request.user.get_post_url_by_hash(hash)
+
+        if post_url is None:
+            self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
+        else:
+            request.user.unregister_post(hash).addCallback(
+                lambda ignore: self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
+            )
+
+
 
     _COMMANDS = (
         (('help', u'помощь', 'справка'), _cmd_help),
         ((r'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
+        ((r'/f #(?P<hash>[a-z0-9]+)',), _cmd_forget_post),
     )
     _COMMANDS =  tuple(
         (tuple(re.compile(alias) for alias in aliases), func)
@@ -146,14 +159,19 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
                 if user is None:
                     user = User(jid = request.jid.userhost())
                     store.add(user)
-                    #store.commit()
 
                 request.user = user
+                request.store = store
 
                 func, kwargs = self._get_command(command)
 
                 if func is not None:
-                    func(self, request, **kwargs)
+                    try:
+                        func(self, request, **kwargs)
+                    except Exception, e:
+                        log.err()
+                        self.send_plain(request.jid.full(), u'Ошибка: %s' % e)
+                        raise
 
             db.pool.transact(_process_request)
 
@@ -204,12 +222,10 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
 
                 user = User(jid = entity.userhost())
                 yield store.add(user)
-                #store.commit().addCallback(_user_added)
 
             else:
                 user.subscribed = True
                 yield store.add(user)
-                #store.commit()
                 self.send_plain(entity.full(), messages.OLD_USER_WELCOME)
         db.pool.transact(_add_user)
 
@@ -225,7 +241,6 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
             if user is not None:
                 user.subscribed = False
                 store.add(user)
-                #store.commit()
         db.pool.transact(_unsubscribe_user)
 
 

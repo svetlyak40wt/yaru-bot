@@ -49,6 +49,18 @@ bot.send('<presence/>') # Hello, OpenFire!
 message_protocol = MessageProtocol(config)
 message_protocol.setHandlerParent(bot)
 
+presence_protocol = PresenceProtocol(config)
+presence_protocol.setHandlerParent(bot)
+
+DiscoHandler().setHandlerParent(bot)
+VersionHandler('yaru-bot', '0.1.0').setHandlerParent(bot)
+
+web_root = WebRoot(message_protocol)
+web_site = server.Site(web_root)
+web_server = TCPServer(config['web']['port'], web_site)
+web_server.setServiceParent(application)
+
+
 def init_scheduler(ignore):
     scheduler = Scheduler(config, message_protocol)
 
@@ -65,13 +77,4 @@ def init_scheduler(ignore):
 
 db_started.addCallback(init_scheduler)
 
-presence_protocol = PresenceProtocol(config)
-presence_protocol.setHandlerParent(bot)
 
-
-DiscoHandler().setHandlerParent(bot)
-VersionHandler('yaru-bot', '0.1.0').setHandlerParent(bot)
-
-web_site = server.Site(WebRoot(message_protocol))
-web_server = TCPServer(config['web']['port'], web_site)
-web_server.setServiceParent(application)

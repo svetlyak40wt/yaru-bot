@@ -10,18 +10,8 @@ from twisted.python import log
 
 class Scheduler(object):
     def __init__(self, config, bot):
-        self.users = {}
         self.cfg = config
         self.bot = bot
-
-        @inlineCallbacks
-        def load_users(store):
-            results = yield store.find(User, User.subscribed == True, User.auth_token != None)
-            results = yield results.all()
-
-            for user in results:
-                self.add(user)
-        db.pool.transact(load_users)
 
 
         # кэшируем уже полученные посты
@@ -51,16 +41,6 @@ class Scheduler(object):
                 User._hash_cache[user_id] = user_hashes
         db.pool.transact(load_posts)
 
-
-
-    def add(self, user):
-        user.detach()
-        self.users[user.jid] = user
-
-
-    def remove(self, user):
-        if user.jid in self.users:
-            del self.users[user.jid]
 
 
     def process_new_posts(self):
@@ -125,11 +105,15 @@ class Scheduler(object):
                 self.remove(user)
                 yield store.add(user)
                 yield store.flush()
-            finally:
-                if user.jid in self.users:
-                    user.detach()
 
-        for user in self.users.values():
-            log.msg('Retriving posts from yaru for: %s' % user.jid)
-            db.pool.transact(process_user_posts, user)
+
+        @inlineCallbacks
+        def process_users(store):
+            results = yield store.find(User, User.subscribed == True, User.auth_token != None)
+            users = yield results.all()
+            for user in users:
+                log.msg('Retriving posts from yaru for: %s' % user.jid)
+                yield db.pool.transact(process_user_posts, user.detach())
+
+        db.pool.transact(process_users)
 
