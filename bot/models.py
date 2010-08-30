@@ -97,18 +97,13 @@ class User(Base):
 
     @inlineCallbacks
     def unregister_post(self, hash):
-        result = yield Store.of(self).find(PostLink, PostLink.user_id == self.id, PostLink.hash == hash)
-        post_link = yield result.one()
+        results = yield self.posts.find(PostLink.hash == hash)
+        post_link = yield results.one()
 
         if post_link is not None:
-            results = yield Store.of(self).find(PostLink, PostLink.url == post_link.url)
-            post_link = yield results.one()
-
-            def clear_cache(ignore):
-                del User._posts_cache[self.id][post_link.url]
-                del User._hash_cache[self.id][post_link.hash]
-
-            results.remove().addCallback(clear_cache)
+            yield results.remove()
+            del User._posts_cache[self.id][post_link.url]
+            del User._hash_cache[self.id][post_link.hash]
 
 
     def is_post_registered(self, url):

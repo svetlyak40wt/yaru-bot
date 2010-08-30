@@ -114,13 +114,14 @@ class CommandsMixIn(object):
 
 
     @require_auth_token
+    @inlineCallbacks
     def _cmd_forget_post(self, request, hash = None):
         post_url = request.user.get_post_url_by_hash(hash)
 
         if post_url is None:
             self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
         else:
-            request.user.unregister_post(hash).addCallback(
+            yield request.user.unregister_post(hash).addCallback(
                 lambda ignore: self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
             )
 
@@ -167,7 +168,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
                 if func is not None:
                     try:
-                        func(self, request, **kwargs)
+                        yield func(self, request, **kwargs)
                     except Exception, e:
                         log.err()
                         self.send_plain(request.jid.full(), u'Ошибка: %s' % e)
