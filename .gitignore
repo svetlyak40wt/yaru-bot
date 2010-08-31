@@ -4,6 +4,7 @@
 *.log
 .vim/ide.session
 .installed.cfg
+.be/id-cache
 bin
 config.yml
 pip-log.txt

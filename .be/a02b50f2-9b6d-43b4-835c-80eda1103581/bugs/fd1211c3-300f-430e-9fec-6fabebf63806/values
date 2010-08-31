@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Проверить, что вызовы к ярушному апи выполняются асинхронно.
+
+
+time: Tue, 31 Aug 2010 12:14:30 +0000
+

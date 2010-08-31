@@ -102,8 +102,6 @@ class Scheduler(object):
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
-                self.remove(user)
-                yield store.add(user)
                 yield store.flush()
 
 
