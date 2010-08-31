@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Если новый пользователь не добавляет бота в ростер, а только пишет ему, то
+  он не заносится в базу и не получает приветствтие
+
+
+time: Tue, 31 Aug 2010 12:49:29 +0000
+

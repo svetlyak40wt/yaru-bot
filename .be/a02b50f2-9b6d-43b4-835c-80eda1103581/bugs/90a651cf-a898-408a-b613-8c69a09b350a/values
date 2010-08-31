@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: fixed
+
+
+summary: При подписке новый пользователь не получает приветственного сообщения а админ
+  не получает уведосления.
+
+
+time: Tue, 31 Aug 2010 12:42:13 +0000
+

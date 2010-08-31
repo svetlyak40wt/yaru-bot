@@ -209,20 +209,20 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
             user = yield user.one()
 
             if user is None:
-                def _user_added(result):
-                    msg = u'Новый подписчик: %s' % entity.userhost()
-
-                    for a in self.admins:
-                        self.send_plain(a, msg)
-                    self.send_plain(
-                        entity.full(),
-                        messages.NEW_USER_WELCOME % (
-                            self.client_id, entity.userhost()
-                        )
-                    )
-
                 user = User(jid = entity.userhost())
                 yield store.add(user)
+
+                msg = u'Новый подписчик: %s' % entity.userhost()
+
+                for a in self.admins:
+                    self.send_plain(a, msg)
+
+                self.send_plain(
+                    entity.full(),
+                    messages.NEW_USER_WELCOME % (
+                        self.client_id, entity.userhost()
+                    )
+                )
 
             else:
                 user.subscribed = True
