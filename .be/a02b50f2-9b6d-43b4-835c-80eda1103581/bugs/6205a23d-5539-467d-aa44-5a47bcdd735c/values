@@ -7,7 +7,7 @@ reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
 severity: minor
 
 
-status: open
+status: fixed
 
 
 summary: Если новый пользователь не добавляет бота в ростер, а только пишет ему, то

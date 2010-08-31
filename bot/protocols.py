@@ -138,13 +138,41 @@ class CommandsMixIn(object):
     )
 
 
+class HelpersMixIn(object):
+    @inlineCallbacks
+    def _get_or_create_user(self, store, jid):
+        user = yield store.find(User, User.jid == jid.userhost())
+        user = yield user.one()
+        created = False
 
-class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn):
+        if user is None:
+            created = True
+            user = User(jid = jid.userhost())
+            yield store.add(user)
+
+            msg = u'Новый подписчик: %s' % jid.userhost()
+
+            admins = self.cfg['bot'].get('admins', [])
+
+            for a in admins:
+                self.send_plain(a, msg)
+
+            self.send_plain(
+                jid.full(),
+                messages.NEW_USER_WELCOME % (
+                    self.client_id, jid.userhost()
+                )
+            )
+        returnValue((user, created))
+
+
+
+class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn, HelpersMixIn):
     def __init__(self, cfg):
-        super(MessageProtocol, self).__init__()
         self.jid = cfg['bot']['jid']
         self.client_id = cfg['api']['client_id']
         self.cfg = cfg
+        super(MessageProtocol, self).__init__()
 
 
     def onMessage(self, msg):
@@ -154,13 +182,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
             @inlineCallbacks
             def _process_request(store):
-                user = yield store.find(User, User.jid == request.jid.userhost())
-                user = yield user.one()
-
-                if user is None:
-                    user = User(jid = request.jid.userhost())
-                    store.add(user)
-
+                user, created = yield self._get_or_create_user(store, request.jid)
                 request.user = user
                 request.store = store
 
@@ -179,13 +201,12 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
 
 
-class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
+class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn, HelpersMixIn):
     def __init__(self, cfg):
-        super(PresenceProtocol, self).__init__()
         self.jid = cfg['bot']['jid']
-        self.admins = cfg['bot'].get('admins', [])
         self.cfg = cfg
         self.client_id = cfg['api']['client_id']
+        super(PresenceProtocol, self).__init__()
 
 
     def connectionInitialized(self):
@@ -205,29 +226,12 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn):
 
         @inlineCallbacks
         def _add_user(store):
-            user = yield store.find(User, User.jid == entity.userhost())
-            user = yield user.one()
+            user, created = yield self._get_or_create_user(store, entity)
+            user.subscribed = True
 
-            if user is None:
-                user = User(jid = entity.userhost())
-                yield store.add(user)
-
-                msg = u'Новый подписчик: %s' % entity.userhost()
-
-                for a in self.admins:
-                    self.send_plain(a, msg)
-
-                self.send_plain(
-                    entity.full(),
-                    messages.NEW_USER_WELCOME % (
-                        self.client_id, entity.userhost()
-                    )
-                )
-
-            else:
-                user.subscribed = True
-                yield store.add(user)
+            if not created:
                 self.send_plain(entity.full(), messages.OLD_USER_WELCOME)
+
         db.pool.transact(_add_user)
 
 
