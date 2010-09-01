@@ -51,7 +51,7 @@ class Scheduler(object):
             try:
                 api = YaRuAPI(user.auth_token)
 
-                posts = api.get_friend_feed()
+                posts = yield api.get_friend_feed()
 
                 for post in posts:
                     post_date = post.updated
@@ -109,9 +109,10 @@ class Scheduler(object):
         def process_users(store):
             results = yield store.find(User, User.subscribed == True, User.auth_token != None)
             users = yield results.all()
+
             for user in users:
                 log.msg('Retriving posts from yaru for: %s' % user.jid)
-                yield db.pool.transact(process_user_posts, user.detach())
+                db.pool.transact(process_user_posts, user.detach())
 
         db.pool.transact(process_users)
 

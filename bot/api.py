@@ -6,6 +6,9 @@ import datetime
 
 from lxml import etree as ET
 from pdb import set_trace
+from twisted.web import client
+from twisted.web.error import Error as WebError
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 NAMESPACES = {
   'a': 'http://www.w3.org/2005/Atom',
@@ -18,12 +21,13 @@ HOST = 'api-yaru.yandex.ru'
 class InvalidAuthToken(RuntimeError): pass
 
 
+@inlineCallbacks
 def comment_post(api, post_url, message):
     url = post_url + '/comment/'
     el = ET.Element('{%(a)s}entry' % NAMESPACES)
     ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
     try:
-        api._auth_request(url, ET.tostring(el))
+        yield api._auth_request(url, ET.tostring(el))
     except urllib2.HTTPError, e:
         if e.code != 201:
             raise
@@ -113,30 +117,40 @@ class YaRuAPI(object):
         self._AUTH_TOKEN = token
 
 
+    @inlineCallbacks
     def _auth_request(self, url, body=None):
         '''Создаёт авторизованный объект запроса.'''
         try:
-            return urllib2.urlopen(urllib2.Request(url, data=body, headers={
-                'Authorization': 'OAuth %s' % self._AUTH_TOKEN
-            }))
-        except urllib2.HTTPError, e:
-            if e.code == 401:
+            data = yield client.getPage(
+                url,
+                method = body and 'POST' or 'GET',
+                headers = {
+                    'User-Agent': 'YaRu Jabber bot: http://yaru.svetlyak.ru',
+                    'Authorization': str('OAuth %s' % self._AUTH_TOKEN),
+                },
+                postdata = body,
+            )
+            returnValue(data)
+        except WebError, e:
+            if int(e.status) == 401:
                 raise InvalidAuthToken(e)
             raise
 
 
+    @inlineCallbacks
     def _get_link(self, rel):
         '''Возвращает URL нужного ресурса из профиля авторизованного пользователя.'''
-        f = self._auth_request('https://%s/me/' % HOST)
-        xml = ET.parse(f)
+        f = yield self._auth_request('https://%s/me/' % HOST)
+        xml = ET.fromstring(f)
         links = xml.xpath('/y:person/y:link[@rel="%s"]' % rel, namespaces = NAMESPACES)
-        return links[0].attrib['href']
+        returnValue(links[0].attrib['href'])
 
 
+    @inlineCallbacks
     def get_friend_feed(self):
 #        posts = open('/tmp/friend-feed.xml', 'r').read()
-        posts_link = self._get_link('friends_posts')
-        posts = self._auth_request(posts_link).read()
+        posts_link = yield self._get_link('friends_posts')
+        posts = yield self._auth_request(posts_link)
         open('/tmp/friend-feed.xml', 'w').write(posts)
 
         posts = ET.fromstring(posts)
@@ -144,7 +158,6 @@ class YaRuAPI(object):
         from_ = None
 
         posts = posts.xpath('a:entry', namespaces = NAMESPACES)
-
-        for post in posts:
-            yield Post(post, self)
+        posts = [Post(post, self) for post in posts]
+        returnValue(posts)
 

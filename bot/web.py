@@ -3,7 +3,6 @@ import simplejson
 
 from pdb import set_trace
 from twisted.internet import reactor
-from twisted.web.client import Agent
 from twisted.web.error import NoResource
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.http_headers import Headers
@@ -27,7 +26,6 @@ class WebRoot(resource.Resource):
             jid = request.args['state'][0]
             code = request.args['code'][0]
 
-            agent = Agent(reactor)
             d = client.getPage(
                 'https://oauth.yandex.ru/token',
                 method = 'POST',
