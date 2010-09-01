@@ -44,9 +44,16 @@ body > header {
 body > header h1 {
     font-size: 3em;
     margin-top: 0.5em;
+    color: #222;
+}
+body > header h1 .alpha {
+    font-size: 0.3em;
+    vertical-align: super;
+    color: #a33;
 }
 body > header h2 {
     font-size: 1.5em;
+    color: #666;
 }
 
 /* content */
@@ -64,6 +71,7 @@ article > header h1 {
     margin-bottom: 1em;
     font-weight: bold;
     margin-left: 2em;
+    color: #222;
 }
 
 article > section > p {
@@ -77,6 +85,7 @@ article > section > header h1 {
     margin-bottom: 1em;
     font-weight: bold;
     margin-left: 2em;
+    color: #222;
 }
 /* Special */
 section.error {
@@ -99,7 +108,7 @@ footer address {
     </head>
     <body>
         <header>
-            <h1>{% block site_name %}<a href="/">Я Джинн Ярушки!</a>{% endblock %}</h1>
+            <h1>{% block site_name %}<a href="/">Я Джинн Ярушки!</a>{% endblock %}<span class="alpha">alpha</span></h1>
             <h2>Реактивный Jabber-Bot.</h2>
         </header>
         <article class="content">
