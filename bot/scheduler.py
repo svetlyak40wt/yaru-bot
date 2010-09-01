@@ -8,6 +8,8 @@ from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
 
+POSTS_DEBUG_CACHE = {}
+
 class Scheduler(object):
     def __init__(self, config, bot):
         self.cfg = config
@@ -64,6 +66,7 @@ class Scheduler(object):
                         continue
 
                     post_link = yield user.register_post(post_link)
+                    POSTS_DEBUG_CACHE[post_link.hash] = post
 
                     parts = [
                         u'%s) %s, %s: ' % (post_link.hash, post.author, post.post_type)

@@ -9,7 +9,8 @@ import re
 from functools import wraps
 from . import messages, db
 from . models import User, PostLink
-from . api import YaRuAPI, comment_post
+from . api import YaRuAPI, comment_post, ET
+from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python.failure import Failure
@@ -119,23 +120,35 @@ class CommandsMixIn(object):
         post_url = request.user.get_post_url_by_hash(hash)
 
         if post_url is None:
-            self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
+            self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
         else:
             yield request.user.unregister_post(hash).addCallback(
                 lambda ignore: self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
             )
 
 
+    @require_auth_token
+    def _cmd_show_xml(self, request, hash = None):
+        post = POSTS_DEBUG_CACHE.get(hash)
+
+        if post is None:
+            self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
+        else:
+            self.send_plain(request.jid.full(), u'Пост %s:\r\n%s' % (hash, ET.tostring(post._xml)))
+
+
 
     _COMMANDS = (
         (('help', u'помощь', 'справка'), _cmd_help),
         ((r'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
-        ((r'/f #(?P<hash>[a-z0-9]+)',), _cmd_forget_post),
+        ((r'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
+        ((r'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
     )
     _COMMANDS =  tuple(
         (tuple(re.compile(alias) for alias in aliases), func)
         for aliases, func in _COMMANDS
     )
+
 
 
 class HelpersMixIn(object):
