@@ -21,6 +21,15 @@ HOST = 'api-yaru.yandex.ru'
 class InvalidAuthToken(RuntimeError): pass
 
 
+def force_str(text):
+    if isinstance(text, unicode):
+        return text.encode('utf-8')
+    if text is None:
+        return text
+    return str(text)
+
+
+
 @inlineCallbacks
 def comment_post(api, post_url, message):
     url = post_url + '/comment/'
@@ -56,6 +65,7 @@ class Post(object):
             namespaces = NAMESPACES
         )[0].attrib['term']
 
+
     @property
     def author(self):
         return self._xml.xpath(
@@ -84,7 +94,6 @@ class Post(object):
         )
 
 
-
     @property
     def updated(self):
         updated = self._xml.xpath(
@@ -95,6 +104,14 @@ class Post(object):
             updated,
             '%Y-%m-%dT%H:%M:%SZ'
         )
+
+
+    @property
+    def link_url(self):
+        url = self._xml.xpath( 'y:meta/y:URL', namespaces = NAMESPACES)
+        if url:
+            return url[0].text
+        return None
 
 
     def get_link(self, rel):
@@ -118,17 +135,17 @@ class YaRuAPI(object):
 
 
     @inlineCallbacks
-    def _auth_request(self, url, body=None):
+    def _auth_request(self, url, body = None):
         '''Создаёт авторизованный объект запроса.'''
         try:
             data = yield client.getPage(
-                url,
+                force_str(url),
                 method = body and 'POST' or 'GET',
                 headers = {
                     'User-Agent': 'YaRu Jabber bot: http://yaru.svetlyak.ru',
-                    'Authorization': str('OAuth %s' % self._AUTH_TOKEN),
+                    'Authorization': force_str('OAuth %s' % self._AUTH_TOKEN),
                 },
-                postdata = body,
+                postdata = force_str(body),
             )
             returnValue(data)
         except WebError, e:

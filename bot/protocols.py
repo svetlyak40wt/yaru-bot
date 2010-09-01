@@ -104,6 +104,7 @@ class CommandsMixIn(object):
 
 
     @require_auth_token
+    @inlineCallbacks
     def _cmd_reply(self, request, hash = None, text = None):
         post_url = request.user.get_post_url_by_hash(hash)
 
@@ -111,7 +112,9 @@ class CommandsMixIn(object):
             self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
         else:
             api = YaRuAPI(request.user.auth_token)
-            comment_post(api, post_url, text)
+            yield comment_post(api, post_url, text)
+            self.send_plain(request.jid.full(), u'Комментарий добавлен')
+
 
 
     @require_auth_token

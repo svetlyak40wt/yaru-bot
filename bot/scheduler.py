@@ -4,6 +4,7 @@ from __future__ import with_statement, absolute_import
 from . api import YaRuAPI, InvalidAuthToken
 from . import db
 from . models import User, PostLink
+from . renderer import render
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
@@ -68,37 +69,7 @@ class Scheduler(object):
                     post_link = yield user.register_post(post_link)
                     POSTS_DEBUG_CACHE[post_link.hash] = post
 
-                    parts = [
-                        u'%s) %s, %s: ' % (post_link.hash, post.author, post.post_type)
-                    ]
-                    html_parts = [
-                        u'<a href="%s">%s</a>) %s, %s: ' % (
-                            post.get_link('alternate'),
-                            post_link.hash,
-                            post.author,
-                            post.post_type
-                        )
-                    ]
-                    title = post.title
-
-                    content_type, content = post.content
-
-                    if title:
-                        parts[0] += title
-                        html_parts[0] += title
-                        if content:
-                            parts.append(content)
-                            html_parts.append(content)
-                    else:
-                        if content:
-                            parts[0] += content
-                            html_parts[0] += content
-
-                    message = u'\n'.join(parts)
-
-                    html_message = u'<br/>'.join(html_parts)
-                    html_message = html_message.replace(u'&lt;', u'<')
-                    html_message = html_message.replace(u'&gt;', u'>')
+                    message, html_message = render(post_link.hash, post)
 
                     log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
                     self.bot.send_html(user.jid, message, html_message)
