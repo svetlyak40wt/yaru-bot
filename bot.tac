@@ -7,7 +7,7 @@ import yaml
 
 from bot import db
 from bot.protocols import MessageProtocol, PresenceProtocol
-from bot.web import WebRoot
+from bot.web import Index, Auth
 from bot.scheduler import Scheduler
 from pdb import set_trace
 from twisted.application import service
@@ -55,7 +55,8 @@ presence_protocol.setHandlerParent(bot)
 DiscoHandler().setHandlerParent(bot)
 VersionHandler('yaru-bot', '0.1.0').setHandlerParent(bot)
 
-web_root = WebRoot(message_protocol)
+web_root = Index(message_protocol)
+
 web_site = server.Site(web_root)
 web_server = TCPServer(config['web']['port'], web_site)
 web_server.setServiceParent(application)

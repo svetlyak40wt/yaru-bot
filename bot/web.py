@@ -1,24 +1,62 @@
 # -*- coding: utf-8 -*-
 import simplejson
 
+from bot import db
+from bot import messages
+from bot.models import User
+from jinja2 import Template, Environment, PackageLoader
 from pdb import set_trace
-from twisted.internet import reactor
-from twisted.web.error import NoResource
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.web.http_headers import Headers
+from twisted.internet import reactor
 from twisted.python import log
+from twisted.web.error import NoResource
+from twisted.web.http_headers import Headers
 from twisted.web import server, resource, client
 from urllib import urlencode
-from bot.models import User
-from bot import messages
-from bot import db
 
 
-class WebRoot(resource.Resource):
-    isLeaf = True
-    def __init__(self, bot):
-        self.bot = bot
+class BaseResource(resource.Resource):
+    def __init__(self, bot, templates = None):
         resource.Resource.__init__(self)
+
+        if templates is None:
+            templates = Environment(loader = PackageLoader('bot'))
+        self.templates = templates
+        self.bot = bot
+
+
+    def render_to_request(self, request, template_name, *args, **kwargs):
+        tmpl = self.templates.get_template(template_name)
+        html = tmpl.render(*args, **kwargs).encode('utf-8')
+
+        request.setHeader('Content-Type', 'text/html; charset=UTF-8')
+        request.write(html)
+        request.finish()
+        return ''
+
+
+
+class Index(BaseResource):
+    isLeaf = False
+
+    def __init__(self, bot):
+        BaseResource.__init__(self, bot)
+        self.putChild('auth', Auth(bot, self.templates))
+
+
+    def getChild(self, name, request):
+        if name == '':
+            return self
+        return resource.Resource.getChild(self, name, request)
+
+
+    def render_GET(self, request):
+        return self.render_to_request(request, 'index.html')
+
+
+
+class Auth(BaseResource):
+    isLeaf = True
 
 
     def render_GET(self, request):
@@ -56,9 +94,7 @@ class WebRoot(resource.Resource):
                     yield store.add(user[0])
 
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
-                    request.setHeader('Content-Type', 'text/html; charset=UTF-8')
-                    request.write('<html>Спасибо за регистрацию, %s!</html>' % jid)
-                    request.finish()
+                    self.render_to_request(request, 'auth-done.html', jid = jid)
 
                 db.pool.transact(add_user)
 
@@ -74,8 +110,7 @@ class WebRoot(resource.Resource):
                     )
                 else:
                     message = 'ERROR: %s' % data.value.message
-                request.write('<html>%s</html>' % message)
-                request.finish()
+                self.render_to_request(request, 'error.html', message = message)
 
             d.addCallback(cb)
             d.addErrback(eb)

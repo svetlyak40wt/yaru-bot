@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+    <head>
+        {% block head %}
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <style type="text/css">
+/* reset */
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,
+form,fieldset,input,textarea,p,blockquote,th,td {
+    padding: 0;
+    margin: 0;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+fieldset,img {
+    border: 0;
+}
+address,caption,cite,code,dfn,em,strong,th,var {
+    font-weight: normal;
+    font-style: normal;
+}
+ol,ul {
+    list-style: none;
+}
+caption,th {
+    text-align: left;
+}
+h1,h2,h3,h4,h5,h6 {
+    font-weight: normal;
+    font-size: 100%;
+}
+
+/* fonts */
+* {
+    font-family: Times, Times New Roman, serif;
+}
+
+/* header */
+body > header {
+    text-align: center;
+}
+body > header h1 {
+    font-size: 3em;
+    margin-top: 0.5em;
+}
+body > header h2 {
+    font-size: 1.5em;
+}
+
+/* content */
+article, section, footer {
+    display: block;
+}
+article.content {
+    padding-left: 200px;
+    padding-right: 200px;
+}
+
+article > header h1 {
+    font-size: 1.2em;
+    margin-top: 2em;
+    margin-bottom: 1em;
+    font-weight: bold;
+    margin-left: 2em;
+}
+
+article > section > p {
+    line-height: 1.5em;
+    margin-top: 1em;
+}
+
+article > section > header h1 {
+    font-size: 1.2em;
+    margin-top: 2em;
+    margin-bottom: 1em;
+    font-weight: bold;
+    margin-left: 2em;
+}
+/* Special */
+section.error {
+    margin-left: 2em;
+    color: red;
+}
+
+/* footer */
+footer {
+    margin-top: 1em;
+}
+footer address {
+    font-size: 0.75em;
+    text-align: center;
+}
+
+        </style>
+        <title>{% block html_title %}{% endblock %} - Джинн Ярушки</title>
+        {% endblock %}
+    </head>
+    <body>
+        <header>
+            <h1>{% block site_name %}<a href="/">Я Джинн Ярушки!</a>{% endblock %}</h1>
+            <h2>Реактивный Jabber-Bot.</h2>
+        </header>
+        <article class="content">
+            <header><h1>{% block title %}{% endblock %}</h1></header>
+            {% block content %}{% endblock %}
+        </article>
+        <footer>
+            <address class="vcard">
+                Just For Fun.
+                <a href="http://github.com/svetlyak40wt/yaru-bot">OpenSource</a>.
+                Автор: <a href="mailto:yaru.bot@yandex.ru" class="fn">Артеменко Александр</a>.
+            </address>
+        </footer>
+    </body>
+</html>
