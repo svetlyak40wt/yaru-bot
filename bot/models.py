@@ -117,9 +117,10 @@ class User(Base):
 
 class PostLink(Base):
     __storm_table__ = 'post_links'
-    url = Unicode(primary = True)
+    __storm_primary__ = 'user_id', 'url'
+    user_id = Int()
+    url = Unicode()
     hash = Unicode()
-    user_id = Int(allow_none = True)
     user = DeferredReference(user_id, User.id)
     created_at = DateTime()
 

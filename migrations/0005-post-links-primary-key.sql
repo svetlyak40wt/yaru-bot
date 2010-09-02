@@ -1,0 +1,1 @@
+ALTER TABLE post_links DROP PRIMARY KEY, ADD PRIMARY KEY (user_id, url);
