@@ -31,8 +31,6 @@ class BaseResource(resource.Resource):
 
         request.setHeader('Content-Type', 'text/html; charset=UTF-8')
         request.write(html)
-        request.finish()
-        return ''
 
 
 
@@ -51,7 +49,9 @@ class Index(BaseResource):
 
 
     def render_GET(self, request):
-        return self.render_to_request(request, 'index.html')
+        self.render_to_request(request, 'index.html')
+        request.finish()
+        return server.NOT_DONE_YET
 
 
 
@@ -95,8 +95,11 @@ class Auth(BaseResource):
 
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
                     self.render_to_request(request, 'auth-done.html', jid = jid)
+                    request.finish()
 
-                db.pool.transact(add_user)
+                db.pool.transact(add_user).addErrback(
+                    lambda ignore: request.finish()
+                )
 
 
 
@@ -111,9 +114,13 @@ class Auth(BaseResource):
                 else:
                     message = 'ERROR: %s' % data.value.message
                 self.render_to_request(request, 'error.html', message = message)
+                request.finish()
 
             d.addCallback(cb)
             d.addErrback(eb)
             return server.NOT_DONE_YET
-        return NoResource
+
+        self.render_to_request(request, '404.html')
+        request.finish()
+        return server.NOT_DONE_YET
 
