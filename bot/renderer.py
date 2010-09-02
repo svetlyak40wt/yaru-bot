@@ -78,9 +78,10 @@ def _render_congratulation(hash, post):
         )
     ]
     content_type, content = post.content
-    content = _prepare_text(content)
-    message.append(content)
-    html_message.append(content)
+    if content:
+        content = _prepare_text(content)
+        message.append(content)
+        html_message.append(content)
 
     message = u'\n'.join(message)
     html_message = u'<br/>'.join(html_message)
