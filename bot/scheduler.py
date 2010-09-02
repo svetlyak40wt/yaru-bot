@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-from . api import YaRuAPI, InvalidAuthToken
+from . api import YaRuAPI, InvalidAuthToken, ET
 from . import db
 from . models import User, PostLink
 from . renderer import render
@@ -57,22 +57,30 @@ class Scheduler(object):
                 posts = yield api.get_friend_feed()
 
                 for post in posts:
-                    post_date = post.updated
-                    post_link = unicode(post.get_link('self'))
+                    try:
+                        post_date = post.updated
+                        post_link = unicode(post.get_link('self'))
 
-                    registered = user.is_post_registered(post_link)
-                    if registered:
-                        #log.msg('ignoring "%s"' % post_link)
-                        # не показываем посты которые уже были показаны
-                        continue
+                        registered = user.is_post_registered(post_link)
+                        if registered:
+                            #log.msg('ignoring "%s"' % post_link)
+                            # не показываем посты которые уже были показаны
+                            continue
 
-                    post_link = yield user.register_post(post_link)
-                    POSTS_DEBUG_CACHE[post_link.hash] = post
+                        post_link = yield user.register_post(post_link)
+                        POSTS_DEBUG_CACHE[post_link.hash] = post
 
-                    message, html_message = render(post_link.hash, post)
+                        message, html_message = render(post_link.hash, post)
 
-                    log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
-                    self.bot.send_html(user.jid, message, html_message)
+                        log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
+                        self.bot.send_html(user.jid, message, html_message)
+                    except Exception, e:
+                        log.msg('ERROR in post processing for %s: %s' % (
+                                user.jid,
+                                ET.tostring(post._xml)
+                            )
+                        )
+                        log.err()
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
