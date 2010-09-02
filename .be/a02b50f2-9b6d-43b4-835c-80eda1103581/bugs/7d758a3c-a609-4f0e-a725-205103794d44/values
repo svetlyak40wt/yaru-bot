@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Сделать умное определение хэша, чтобы старые линки замещались на новые.
+
+
+time: Thu, 02 Sep 2010 10:03:42 +0000
+
