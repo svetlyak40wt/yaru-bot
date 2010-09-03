@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: serious
+
+
+status: open
+
+
+summary: Переделать планировщик, чтобы он не вызывался сразу для всех пользователей,
+  а как-то их распределял.
+
+
+time: Thu, 02 Sep 2010 14:28:42 +0000
+
