@@ -192,7 +192,12 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
 
     def onMessage(self, msg):
-        if msg['type'] == 'chat' and hasattr(msg, 'body') and msg.body:
+        log.msg('onMessage call: type=%r, body=%r' % (msg.getAttribute('type'), msg.body))
+        if msg.getAttribute('type') == 'chat' and unicode(msg.body) == 'pdb':
+            log.msg('making set_trace')
+            set_trace()
+
+        if msg.getAttribute('type') == 'chat' and hasattr(msg, 'body') and msg.body:
             request = Request(msg, self.client_id)
             command = unicode(msg.body)
 

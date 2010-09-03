@@ -3,6 +3,7 @@ Jabber bot to serve http://wow.ya.ru service.
 """
 
 import locale
+import os
 import yaml
 
 from bot import db
@@ -21,12 +22,14 @@ from wokkel.disco import DiscoHandler
 from wokkel.generic import VersionHandler
 from wokkel import client
 
+import twisted.manhole.telnet
+
 
 # Configuration parameters
 
 locale.setlocale(locale.LC_ALL, '')
 
-config = yaml.load(open('config.yml'))
+config = yaml.load(open(os.environ.get('CONFIG', 'config.yml')))
 
 db_started = db.init(config['database'])
 
@@ -71,11 +74,23 @@ def init_scheduler(ignore):
         except Exception:
             DebugInfo().failResult = failure.Failure()
 
-    task.LoopingCall(process_new_posts).start(
-        config['bot']['polling_interval'],
-        now = False
-    )
+    if not config['bot'].get('disable_post_processing'):
+        task.LoopingCall(process_new_posts).start(
+            config['bot']['polling_interval'],
+            now = False
+        )
 
 db_started.addCallback(init_scheduler)
 
+# Add a manhole shell
+debug_port = config['bot'].get('debug_port')
+
+if debug_port:
+    f = twisted.manhole.telnet.ShellFactory()
+    f.username = config['bot']['debug_user']
+    f.password = config['bot']['debug_pass']
+    f.namespace['bot'] = message_protocol
+    f.namespace['presence'] = presence_protocol
+    manhole = TCPServer(debug_port, f)
+    manhole.setServiceParent(application)
 
