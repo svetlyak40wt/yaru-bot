@@ -11,17 +11,12 @@ from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
 
-HASH_LENGTH = 4
-POST_HISTORY_LENGTH = 100
+HASH_LENGTH = 3
 
 
 from storm import properties, info
 
 marker = object()
-
-
-def create_hash(url):
-    return unicode(md5(url).hexdigest()[:HASH_LENGTH])
 
 
 class Base( object ):
@@ -90,7 +85,9 @@ class User(Base):
 
     @inlineCallbacks
     def register_post(self, url):
-        post_link = PostLink(url)
+        hash = yield self._create_hash(url)
+
+        post_link = PostLink(url, hash)
         yield self.posts.add(post_link)
         User._posts_cache[self.id][url] = True
         User._hash_cache[self.id][post_link.hash] = url
@@ -116,6 +113,14 @@ class User(Base):
         return User._hash_cache[self.id].get(hash)
 
 
+    @inlineCallbacks
+    def _create_hash(self, url):
+        hash = unicode(md5(url).hexdigest()[:HASH_LENGTH])
+        yield self.unregister_post(hash)
+        returnValue(hash)
+
+
+
 
 class PostLink(Base):
     __storm_table__ = 'post_links'
@@ -126,9 +131,9 @@ class PostLink(Base):
     user = DeferredReference(user_id, User.id)
     created_at = DateTime()
 
-    def __init__(self, url):
+    def __init__(self, url, hash):
         self.url = unicode(url)
-        self.hash = create_hash(url)
+        self.hash = hash
         self.created_at = datetime.datetime.utcnow()
 
 
