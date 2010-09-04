@@ -9,7 +9,7 @@ import re
 from functools import wraps
 from . import messages, db
 from . models import User, PostLink
-from . api import YaRuAPI, comment_post, ET
+from . api import YaRuAPI, ET
 from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue, succeed
@@ -136,9 +136,16 @@ class CommandsMixIn(object):
             self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
         else:
             api = YaRuAPI(request.user.auth_token)
-            yield comment_post(api, post_url, text)
+            yield api.comment_post(post_url, text)
             self.send_plain(request.jid.full(), u'Комментарий добавлен')
 
+
+    @require_auth_token
+    @inlineCallbacks
+    def _cmd_post_text(self, request, text = None):
+        api = YaRuAPI(request.user.auth_token)
+        post_url = yield api.post_text(text)
+        self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
 
 
     @require_auth_token
@@ -178,11 +185,12 @@ class CommandsMixIn(object):
 
 
     _COMMANDS = (
-        (('help', u'помощь', u'справка'), _cmd_help),
-        ((r'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
-        ((r'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
-        ((r'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
-        ((r'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
+        ((u'help', u'помощь', u'справка'), _cmd_help),
+        ((ur'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
+        ((ur'post (?P<text>.*)', ur'пост (?P<text>.*)'), _cmd_post_text),
+        ((ur'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
+        ((ur'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
+        ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
     )
     _COMMANDS =  tuple(
         (tuple(re.compile(alias) for alias in aliases), func)

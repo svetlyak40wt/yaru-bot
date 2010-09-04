@@ -30,19 +30,6 @@ def force_str(text):
 
 
 
-@inlineCallbacks
-def comment_post(api, post_url, message):
-    url = post_url + '/comment/'
-    el = ET.Element('{%(a)s}entry' % NAMESPACES)
-    ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
-    try:
-        yield api._auth_request(url, ET.tostring(el))
-    except urllib2.HTTPError, e:
-        if e.code != 201:
-            raise
-
-
-
 class Post(object):
     def __init__(self, xml, api):
         self._xml = xml
@@ -165,10 +152,8 @@ class YaRuAPI(object):
 
     @inlineCallbacks
     def get_friend_feed(self):
-#        posts = open('/tmp/friend-feed.xml', 'r').read()
         posts_link = yield self._get_link('friends_posts')
         posts = yield self._auth_request(posts_link)
-        open('/tmp/friend-feed.xml', 'w').write(posts)
 
         posts = ET.fromstring(posts)
 
@@ -177,4 +162,45 @@ class YaRuAPI(object):
         posts = posts.xpath('a:entry', namespaces = NAMESPACES)
         posts = [Post(post, self) for post in posts]
         returnValue(posts)
+
+
+    @inlineCallbacks
+    def comment_post(self, post_url, message):
+        url = post_url + '/comment/'
+        el = ET.Element('{%(a)s}entry' % NAMESPACES)
+        ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
+        try:
+            yield self._auth_request(url, ET.tostring(el))
+        except urllib2.HTTPError, e:
+            if e.code != 201:
+                raise
+
+
+    @inlineCallbacks
+    def post_text(self, text):
+        url = yield self._get_link('posts')
+
+        el = ET.Element('{%(a)s}entry' % NAMESPACES)
+
+        splitted = filter(None, text.split('.', 1))
+        if len(splitted) == 2:
+            ET.SubElement(el, '{%(a)s}title' % NAMESPACES).text = splitted[0]
+            ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = splitted[1]
+        else:
+            ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = text
+
+        ET.SubElement(
+            el, '{%(a)s}category' % NAMESPACES,
+            scheme = 'urn:ya.ru:posttypes', term = 'text'
+        )
+        try:
+            result = yield self._auth_request(url, ET.tostring(el))
+        except urllib2.HTTPError, e:
+            if e.code != 201:
+                raise
+
+        result = ET.fromstring(result.decode('utf-8'))
+        links = result.xpath('a:link[@rel = "alternate"]', namespaces = NAMESPACES)
+        if len(links) != 0:
+            returnValue(links[0].attrib['href'])
 
