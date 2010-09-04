@@ -12,12 +12,15 @@ from . models import User, PostLink
 from . api import YaRuAPI, comment_post, ET
 from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, succeed
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
 from twisted.words.xish import domish
+from wokkel import disco
 from wokkel import xmppim
+from wokkel.iwokkel import IDisco
+from zope.interface import implements
 
 
 CHATSTATE_NS = 'http://jabber.org/protocol/chatstates'
@@ -164,8 +167,12 @@ class CommandsMixIn(object):
     @inlineCallbacks
     def _cmd_announce(self, request, text = None):
         users = yield self._get_active_users(request.store)
+
+        text = u'Анонс: ' + text
+
         for user in users:
             self.send_plain(request.jid.full(), text)
+
         self.send_plain(request.jid.full(), u'Анонс разослан')
 
 
@@ -225,6 +232,8 @@ class HelpersMixIn(object):
 
 
 class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn, HelpersMixIn):
+    implements(IDisco)
+
     def __init__(self, cfg):
         self.jid = cfg['bot']['jid']
         self.client_id = cfg['api']['client_id']
@@ -262,6 +271,15 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
             db.pool.transact(_process_request)
 
+
+    def getDiscoInfo(self, requestor, target, node):
+        info = set()
+        if not node:
+            info.add(disco.DiscoFeature('http://jabber.org/protocol/xhtml-im'))
+        return succeed(info)
+
+    def getDiscoItems(self, requestor, target, node):
+        return succeed([])
 
 
 
