@@ -71,12 +71,13 @@ class Scheduler(object):
                             continue
 
                         post_link = yield user.register_post(post_link)
-                        POSTS_DEBUG_CACHE[post_link.hash] = post
 
                         message, html_message = render(post_link.hash, post)
 
                         log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
                         self.bot.send_html(user.jid, message, html_message)
+
+                        POSTS_DEBUG_CACHE[post_link.hash] = post
                     except Exception, e:
                         log.msg('ERROR in post processing for %s: %s' % (
                                 user.jid,
@@ -84,6 +85,7 @@ class Scheduler(object):
                             )
                         )
                         log.err()
+                        yield user.unregister_post(post_link.hash)
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
