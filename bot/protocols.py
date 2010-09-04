@@ -257,6 +257,8 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
                         log.err()
                         self.send_plain(request.jid.full(), u'Ошибка: %s' % e)
                         raise
+                else:
+                    self.send_plain(request.jid.full(), u'Нет такой команды (см. help).')
 
             db.pool.transact(_process_request)
 

@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: fixed
+
+
+summary: Ксли команда не найдена, надо выводить предупреждение.
+
+
+time: Sat, 04 Sep 2010 13:38:22 +0000
+
