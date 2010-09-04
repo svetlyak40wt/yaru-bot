@@ -1,9 +1,13 @@
 bot:
     jid: 'yaru.bot@ya.ru'
     pass: 'пароль'
-    polling_interval: 120
+    polling_interval: 15
     admins:
         - 'admin@example.com'
+
+scheduler:
+    num_users_in_batch: 5
+    reschedule_interval: 120
 
 api:
     client_id: '911aec2bd1f543e194d68bd916f2190c'

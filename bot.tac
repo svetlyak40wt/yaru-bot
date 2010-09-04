@@ -66,7 +66,7 @@ web_server.setServiceParent(application)
 
 
 def init_scheduler(ignore):
-    scheduler = Scheduler(config, message_protocol)
+    scheduler = Scheduler(config.get('scheduler', {}), message_protocol)
 
     def process_new_posts():
         try:

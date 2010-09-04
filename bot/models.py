@@ -74,6 +74,7 @@ class User(Base):
     created_at = DateTime(default = None)
     updated_at = DateTime(default = None)
     lastseen_at = DateTime(default = None)
+    next_poll_at = DateTime(default = None)
 
     _posts_cache = defaultdict(dict)
     _hash_cache = defaultdict(dict)
@@ -84,6 +85,7 @@ class User(Base):
         self.created_at = now
         self.updated_at = now
         self.lastseen_at = now
+        self.next_poll_at = now
 
 
     @inlineCallbacks

@@ -7,7 +7,7 @@ reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
 severity: serious
 
 
-status: open
+status: fixed
 
 
 summary: Переделать планировщик, чтобы он не вызывался сразу для всех пользователей,

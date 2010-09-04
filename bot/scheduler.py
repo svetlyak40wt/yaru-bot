@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
+import datetime
+
 from . api import YaRuAPI, InvalidAuthToken, ET
 from . import db
 from . models import User, PostLink
@@ -13,8 +15,9 @@ POSTS_DEBUG_CACHE = {}
 
 class Scheduler(object):
     def __init__(self, config, bot):
-        self.cfg = config
         self.bot = bot
+        self.num_users_in_batch = config.get('num_users_in_batch', 5)
+        self.reschedule_interval = config.get('reschedule_interval', 120)
 
 
         # кэшируем уже полученные посты
@@ -84,12 +87,25 @@ class Scheduler(object):
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
-                yield store.flush()
+                user.updated_at = datetime.datetime.utcnow()
+
+            user.next_poll_at = \
+                datetime.datetime.utcnow() + \
+                datetime.timedelta(0, self.reschedule_interval)
+            yield store.flush()
 
 
         @inlineCallbacks
         def process_users(store):
-            results = yield store.find(User, User.subscribed == True, User.auth_token != None)
+            now = datetime.datetime.utcnow()
+            results = yield store.find(
+                User,
+                User.subscribed == True,
+                User.auth_token != None,
+                User.next_poll_at < now,
+            )
+            results.order_by(User.next_poll_at)
+            results.config(limit = self.num_users_in_batch)
             users = yield results.all()
 
             for user in users:
