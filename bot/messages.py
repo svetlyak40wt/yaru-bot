@@ -33,4 +33,5 @@ REQUIRE_AUTH_TOKEN = u"""Сначала, дай мне доступ к свое�
 https://oauth.yandex.ru/authorize?client_id=%s&response_type=code&state=%s
 """
 
+REQUIRE_BE_ADMIN = u"""Эта команда доступна только администраторам сервиса."""
 

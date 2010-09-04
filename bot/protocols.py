@@ -84,6 +84,27 @@ def require_auth_token(func):
 
 
 
+def admin_only(func):
+    """ Декоратор, который требует, чтобы о пользователе
+        были известны его яндекс-логин и авторизационный
+        токен.
+    """
+    @wraps(func)
+    def wrapper(self, request, **kwargs):
+        admins = self.cfg['bot'].get('admins', [])
+
+        if request.jid.userhost() not in admins:
+            self.send_plain(
+                request.jid.full(),
+                messages.REQUIRE_BE_ADMIN
+            )
+        else:
+            return func(self, request, **kwargs)
+    return wrapper
+
+
+
+
 class CommandsMixIn(object):
     """ Всевозможные команды, которые бот умеет понимать. """
     def _get_command(self, text):
@@ -125,12 +146,11 @@ class CommandsMixIn(object):
         if post_url is None:
             self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
         else:
-            yield request.user.unregister_post(hash).addCallback(
-                lambda ignore: self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
-            )
+            yield request.user.unregister_post(hash)
+            self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
 
 
-    @require_auth_token
+    @admin_only
     def _cmd_show_xml(self, request, hash = None):
         post = POSTS_DEBUG_CACHE.get(hash)
 
@@ -140,12 +160,22 @@ class CommandsMixIn(object):
             self.send_plain(request.jid.full(), u'Пост %s:\r\n%s' % (hash, ET.tostring(post._xml)))
 
 
+    @admin_only
+    @inlineCallbacks
+    def _cmd_announce(self, request, text = None):
+        users = yield self._get_active_users(request.store)
+        for user in users:
+            self.send_plain(request.jid.full(), text)
+        self.send_plain(request.jid.full(), u'Анонс разослан')
+
+
 
     _COMMANDS = (
-        (('help', u'помощь', 'справка'), _cmd_help),
+        (('help', u'помощь', u'справка'), _cmd_help),
         ((r'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
         ((r'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
         ((r'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
+        ((r'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
     )
     _COMMANDS =  tuple(
         (tuple(re.compile(alias) for alias in aliases), func)
@@ -180,6 +210,17 @@ class HelpersMixIn(object):
                 )
             )
         returnValue((user, created))
+
+
+    @inlineCallbacks
+    def _get_active_users(self, store):
+        users = yield store.find(
+            User,
+            User.subscribed == True,
+            User.auth_token != None,
+        )
+        users = yield users.all()
+        returnValue(users)
 
 
 
