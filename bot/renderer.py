@@ -25,6 +25,11 @@ def _get_params(hash, post):
     )
 
 
+def _strip_tags(html):
+    html = re.sub(r' *<br[ /]*?> *', '\n', html)
+    return re.sub(r'<.*?>', '', html)
+
+
 def _prepare_text(text):
     if not isinstance(text, basestring):
         return text
@@ -54,16 +59,17 @@ def _render_link(hash, post):
     content = _prepare_text(content)
 
     if content:
-        message += '\n' + content
+        message += '\n' + _strip_tags(content)
         html_message += '<br />' + content
 
+    message += u'\nИсточник: %(post_link)s' % params
     return message, html_message
 
 
 def _render_status(hash, post):
     params = _get_params(hash, post)
     content_type, content = post.content
-    params['content'] = _prepare_text(content)
+    params['content'] = _strip_tags(_prepare_text(content))
 
     message = u'#%(hash)s) %(author)s сменил настроение: %(content)s ' % params
     html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
@@ -78,7 +84,7 @@ def _render_congratulation(hash, post):
     content_type, content = post.content
     if content:
         content = _prepare_text(content)
-        message.append(content)
+        message.append(_strip_tags(content))
         html_message.append(content)
 
     message = u'\n'.join(message)
@@ -94,7 +100,7 @@ def _render_generic(hash, post):
     params = _get_params(hash, post)
     params['type'] = type_
     parts = [
-        u'#%(hash)s) %(author)s%(type)s ' % params
+        u'#%(hash)s) %(author)s%(type)s: ' % params
     ]
     html_parts = [
         u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s%(type)s: ' % params
@@ -108,16 +114,17 @@ def _render_generic(hash, post):
         parts[0] += title
         html_parts[0] += title
         if content:
-            parts.append(content)
+            parts.append(_strip_tags(content))
             html_parts.append(content)
     else:
         if content:
-            parts[0] += content
+            parts[0] += _strip_tags(content)
             html_parts[0] += content
 
+    parts.append(u'Источник: %(post_link)s' % params)
     message = u'\n'.join(parts)
-
     html_message = u'<br/>'.join(html_parts)
+
     html_message = html_message.replace(u'&lt;', u'<')
     html_message = html_message.replace(u'&gt;', u'>')
 
