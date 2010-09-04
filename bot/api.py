@@ -204,3 +204,39 @@ class YaRuAPI(object):
         if len(links) != 0:
             returnValue(links[0].attrib['href'])
 
+
+    @inlineCallbacks
+    def post_link(self, url, title = None, comment = None):
+        # Боремся против iChat, который присылает url как http://ya.ru [http://ya.ru]
+        url = url.split(' ', 1)[0]
+        posts_url = yield self._get_link('posts')
+
+        el = ET.Element('{%(a)s}entry' % NAMESPACES)
+
+        if title:
+            ET.SubElement(el, '{%(a)s}title' % NAMESPACES).text = title
+
+        if comment:
+            ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = comment
+        else:
+            ET.SubElement(el, '{%(a)s}content' % NAMESPACES)
+
+        meta = ET.SubElement(el, '{%(y)s}meta' % NAMESPACES)
+        ET.SubElement(meta, '{%(y)s}URL' % NAMESPACES).text = url
+
+        ET.SubElement(
+            el, '{%(a)s}category' % NAMESPACES,
+            scheme = 'urn:ya.ru:posttypes', term = 'link'
+        )
+
+        try:
+            result = yield self._auth_request(posts_url, ET.tostring(el))
+        except urllib2.HTTPError, e:
+            if e.code != 201:
+                raise
+
+        result = ET.fromstring(result.decode('utf-8'))
+        links = result.xpath('a:link[@rel = "alternate"]', namespaces = NAMESPACES)
+        if len(links) != 0:
+            returnValue(links[0].attrib['href'])
+

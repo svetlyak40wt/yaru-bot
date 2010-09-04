@@ -150,6 +150,14 @@ class CommandsMixIn(object):
 
     @require_auth_token
     @inlineCallbacks
+    def _cmd_post_link(self, request, url = None, title = None, comment = None):
+        api = YaRuAPI(request.user.auth_token)
+        post_url = yield api.post_link(url, title, comment)
+        self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
+
+
+    @require_auth_token
+    @inlineCallbacks
     def _cmd_forget_post(self, request, hash = None):
         post_url = request.user.get_post_url_by_hash(hash)
 
@@ -188,6 +196,14 @@ class CommandsMixIn(object):
         ((u'help', u'помощь', u'справка'), _cmd_help),
         ((ur'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
         ((ur'post (?P<text>.*)', ur'пост (?P<text>.*)'), _cmd_post_text),
+        ((
+            ur'link (?P<url>.+?) - (?P<title>.+?) - (?P<comment>.+)',
+            ur'ссылка (?P<url>.+?) - (?P<title>.+?) - (?P<comment>.+)',
+            ur'link (?P<url>.+?) - (?P<title>.+)',
+            ur'ссылка (?P<url>.+?) - (?P<title>.+)',
+            ur'link (?P<url>.+)',
+            ur'ссылка (?P<url>.+)',
+         ), _cmd_post_link),
         ((ur'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
         ((ur'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
         ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
