@@ -17,6 +17,14 @@ _img1_re = re.compile(r'<img.*?src="(.+?)".+?alt="".*?/>')
 _img2_re = re.compile(r'<img.*?src="(.+?)".+?alt="(.+?)".*?/>')
 _img3_re = re.compile(r'<img.*?src="(.+?)".*?/>')
 
+def _get_params(hash, post):
+    return dict(
+        hash = hash,
+        author = post.author,
+        post_link = post.get_link('alternate'),
+    )
+
+
 def _prepare_text(text):
     if not isinstance(text, basestring):
         return text
@@ -31,12 +39,9 @@ def _prepare_text(text):
 
 
 def _render_link(hash, post):
-    message = u'%s) %s дал ссылку: ' % (hash, post.author)
-    html_message = u'<a href="%s">%s</a>) %s дал ссылку: ' % (
-        post.get_link('alternate'),
-        hash,
-        post.author,
-    )
+    params = _get_params(hash, post)
+    message = u'#%(hash)s) %(author)s дал ссылку: ' % params
+    html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s дал ссылку: ' % params
 
     if post.title:
         message += '%s - %s' % (post.title, post.link_url)
@@ -56,27 +61,20 @@ def _render_link(hash, post):
 
 
 def _render_status(hash, post):
+    params = _get_params(hash, post)
     content_type, content = post.content
-    content = _prepare_text(content)
+    params['content'] = _prepare_text(content)
 
-    message = u'%s) %s сменил настроение: %s ' % (hash, post.author, content)
-    html_message = u'<a href="%s">%s</a>) %s сменил настроение: %s' % (
-        post.get_link('alternate'),
-        hash,
-        post.author,
-        content,
-    )
+    message = u'#%(hash)s) %(author)s сменил настроение: %(content)s ' % params
+    html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
     return message, html_message
 
 
 def _render_congratulation(hash, post):
-    message = [u'%s) %s поздравляет: ' % (hash, post.author)]
-    html_message = [u'<a href="%s">%s</a>) %s поздравляет: ' % (
-            post.get_link('alternate'),
-            hash,
-            post.author
-        )
-    ]
+    params = _get_params(hash, post)
+    message = [u'#%(hash)s) %(author)s поздравляет: ' % params]
+    html_message = [u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s поздравляет: ' % params]
+
     content_type, content = post.content
     if content:
         content = _prepare_text(content)
@@ -93,16 +91,13 @@ def _render_generic(hash, post):
     if type_ == u', text':
         type_ = u' написал'
 
+    params = _get_params(hash, post)
+    params['type'] = type_
     parts = [
-        u'%s) %s%s ' % (hash, post.author, type_)
+        u'#%(hash)s) %(author)s%(type)s ' % params
     ]
     html_parts = [
-        u'<a href="%s">%s</a>) %s%s: ' % (
-            post.get_link('alternate'),
-            hash,
-            post.author,
-            type_,
-        )
+        u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s%(type)s: ' % params
     ]
     title = post.title
 
