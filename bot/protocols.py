@@ -7,7 +7,7 @@ import pickle
 import re
 
 from functools import wraps
-from . import messages, db
+from . import messages, db, stats
 from . models import User, PostLink
 from . api import YaRuAPI, ET
 from . scheduler import POSTS_DEBUG_CACHE
@@ -146,6 +146,7 @@ class CommandsMixIn(object):
         api = YaRuAPI(request.user.auth_token)
         post_url = yield api.post_text(text)
         self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
+        stats.STATS['sent_posts'] += 1
 
 
     @require_auth_token
@@ -154,6 +155,7 @@ class CommandsMixIn(object):
         api = YaRuAPI(request.user.auth_token)
         post_url = yield api.post_link(url, title, comment)
         self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
+        stats.STATS['sent_links'] += 1
 
 
     @require_auth_token

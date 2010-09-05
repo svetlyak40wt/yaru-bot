@@ -5,6 +5,7 @@ import datetime
 
 from . api import YaRuAPI, InvalidAuthToken, ET
 from . import db
+from . import stats
 from . models import User, PostLink
 from . renderer import render
 from pdb import set_trace
@@ -78,6 +79,7 @@ class Scheduler(object):
                         self.bot.send_html(user.jid, message, html_message)
 
                         POSTS_DEBUG_CACHE[post_link.hash] = post
+                        stats.STATS['posts_processed'] += 1
                     except Exception, e:
                         log.msg('ERROR in post processing for %s: %s' % (
                                 user.jid,
@@ -85,11 +87,14 @@ class Scheduler(object):
                             )
                         )
                         log.err()
+                        stats.STATS['posts_processed'] -= 1
+                        stats.STATS['posts_failed'] += 1
                         yield user.unregister_post(post_link.hash)
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
                 user.updated_at = datetime.datetime.utcnow()
+                stats.STATS['unsubscribed'] += 1
 
             user.next_poll_at = \
                 datetime.datetime.utcnow() + \

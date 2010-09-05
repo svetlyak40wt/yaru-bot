@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import simplejson
 
-from bot import db
-from bot import messages
-from bot.models import User
+from . import db
+from . import messages
+from . import stats
+from . models import User
 from jinja2 import Template, Environment, PackageLoader
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -92,6 +93,7 @@ class Auth(BaseResource):
                     user[0].refresh_token = refresh_token
 
                     yield store.add(user[0])
+                    stats.STATS['new_users'] += 1
 
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
                     self.render_to_request(request, 'auth-done.html', jid = jid)

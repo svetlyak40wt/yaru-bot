@@ -5,7 +5,7 @@ from collections import defaultdict
 from bot import db
 from hashlib import md5
 from pdb import set_trace
-from storm.locals import Int, Unicode, DateTime, Bool
+from storm.locals import Int, Unicode, DateTime, Bool, Date
 from storm.twisted.store import DeferredStore as Store
 from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -138,4 +138,19 @@ class PostLink(Base):
 
 
 User.posts = DeferredReferenceSet(User.id, PostLink.user_id)
+
+
+
+class Stats(Base):
+    __storm_table__ = 'stats'
+    date = Date(primary = True)
+    new_users = Int(default = 0)
+    unsubscribed = Int(default = 0)
+    posts_processed = Int(default = 0)
+    posts_failed = Int(default = 0)
+    sent_posts = Int(default = 0)
+    sent_links = Int(default = 0)
+
+    def __init__(self):
+        self.date = datetime.date.today()
 

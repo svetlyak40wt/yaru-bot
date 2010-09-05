@@ -80,7 +80,14 @@ def init_scheduler(ignore):
             now = False
         )
 
+def init_stats(ignore):
+    from bot.stats import save_stats, load_stats
+    load_stats()
+    task.LoopingCall(save_stats).start(30, now = False)
+
+
 db_started.addCallback(init_scheduler)
+db_started.addCallback(init_stats)
 
 # Add a manhole shell
 debug_port = config['bot'].get('debug_port')
