@@ -56,7 +56,7 @@ presence_protocol = PresenceProtocol(config)
 presence_protocol.setHandlerParent(bot)
 
 DiscoHandler().setHandlerParent(bot)
-VersionHandler('yaru-bot', '0.1.0').setHandlerParent(bot)
+VersionHandler('yaru-bot', '0.1.1').setHandlerParent(bot)
 
 web_root = Index(message_protocol)
 

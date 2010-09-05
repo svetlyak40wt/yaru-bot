@@ -105,6 +105,30 @@ footer address {
     text-align: center;
 }
 
+/* ChangeLog */
+.changelog dt {
+    font-size: 1.5em;
+    margin-left: 1em;
+    margin-top: 1em;
+}
+.changelog dt span {
+    font-size: 0.5em;
+    margin-left: 1em;
+}
+.changelog dd {
+    margin-top: 0.5em;
+}
+.changelog dd li {
+    line-height: 1.5em;
+    list-style: circle;
+}
+.changelog dd li.cool {
+    color: #1A1;
+}
+.changelog dd li.fix {
+    color: #A11;
+}
+
         </style>
         <title>{% block html_title %}{% endblock %} - Джинн Ярушки</title>
         {% endblock %}
@@ -121,7 +145,8 @@ footer address {
         <footer>
             <address class="vcard">
                 Just For Fun.
-                <a href="http://github.com/svetlyak40wt/yaru-bot">OpenSource</a>.
+                <a href="http://github.com/svetlyak40wt/yaru-bot">OpenSource</a>,
+                <a href="/ChangeLog">ChangeLog</a>.
                 Автор: <a href="mailto:yaru.bot@yandex.ru" class="fn">Артеменко Александр</a>.
             </address>
         </footer>

@@ -17,7 +17,7 @@ from urllib import urlencode
 
 
 class BaseResource(resource.Resource):
-    def __init__(self, bot, templates = None):
+    def __init__(self, bot = None, templates = None):
         resource.Resource.__init__(self)
 
         if templates is None:
@@ -41,6 +41,7 @@ class Index(BaseResource):
     def __init__(self, bot):
         BaseResource.__init__(self, bot)
         self.putChild('auth', Auth(bot, self.templates))
+        self.putChild('ChangeLog', ChangeLog(self.templates))
 
 
     def getChild(self, name, request):
@@ -126,3 +127,12 @@ class Auth(BaseResource):
         request.finish()
         return server.NOT_DONE_YET
 
+
+
+class ChangeLog(BaseResource):
+    isLeaf = True
+
+    def render_GET(self, request):
+        self.render_to_request(request, 'changelog.html')
+        request.finish()
+        return server.NOT_DONE_YET
