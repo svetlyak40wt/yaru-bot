@@ -94,9 +94,7 @@ def admin_only(func):
     """
     @wraps(func)
     def wrapper(self, request, **kwargs):
-        admins = self.cfg['bot'].get('admins', [])
-
-        if request.jid.userhost() not in admins:
+        if request.jid.userhost() not in self._get_admins():
             self.send_plain(
                 request.jid.full(),
                 messages.REQUIRE_BE_ADMIN
@@ -231,9 +229,7 @@ class HelpersMixIn(object):
 
             msg = u'Новый подписчик: %s' % jid.userhost()
 
-            admins = self.cfg['bot'].get('admins', [])
-
-            for a in admins:
+            for a in self._get_admins():
                 self.send_plain(a, msg)
 
             self.send_plain(
@@ -255,6 +251,9 @@ class HelpersMixIn(object):
         users = yield users.all()
         returnValue(users)
 
+    def _get_admins(self):
+        return self.cfg['bot'].get('admins', [])
+
 
 
 class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn, HelpersMixIn):
@@ -269,13 +268,14 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
     def onMessage(self, msg):
         log.msg('onMessage call: type=%r, body=%r' % (msg.getAttribute('type'), msg.body))
-        if msg.getAttribute('type') == 'chat' and unicode(msg.body) == 'pdb':
-            log.msg('making set_trace')
-            set_trace()
-
         if msg.getAttribute('type') == 'chat' and hasattr(msg, 'body') and msg.body:
             request = Request(msg, self.client_id)
             command = unicode(msg.body)
+
+            if command == 'pdb' and \
+                    request.jid.userhost() in self._get_admins():
+                set_trace()
+
 
             @inlineCallbacks
             def _process_request(store):
