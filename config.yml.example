@@ -1,5 +1,5 @@
 bot:
-    jid: 'yaru.bot@ya.ru'
+    jid: 'yaru-bot@ya.ru'
     pass: 'пароль'
     polling_interval: 15
     admins:
