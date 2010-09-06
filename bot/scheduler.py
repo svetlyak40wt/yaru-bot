@@ -89,7 +89,10 @@ class Scheduler(object):
                         log.err()
                         stats.STATS['posts_processed'] -= 1
                         stats.STATS['posts_failed'] += 1
-                        yield user.unregister_post(post_link.hash)
+                        if isinstance(post_link, unicode):
+                            yield user.unregister_post(url = post_link)
+                        else:
+                            yield user.unregister_post(hash = post_link.hash)
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None

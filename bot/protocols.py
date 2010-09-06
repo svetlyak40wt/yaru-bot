@@ -164,7 +164,7 @@ class CommandsMixIn(object):
         if post_url is None:
             self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
         else:
-            yield request.user.unregister_post(hash)
+            yield request.user.unregister_post(hash = hash)
             self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
 
 

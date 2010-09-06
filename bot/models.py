@@ -95,14 +95,22 @@ class User(Base):
 
 
     @inlineCallbacks
-    def unregister_post(self, hash):
-        results = yield self.posts.find(PostLink.hash == hash)
+    def unregister_post(self, hash = None, url = None):
+        if hash is not None:
+            results = yield self.posts.find(PostLink.hash == hash)
+        elif url is not None:
+            results = yield self.posts.find(PostLink.url == url)
+        else:
+            return
+
         post_link = yield results.one()
 
         if post_link is not None:
             yield results.remove()
-            del User._posts_cache[self.id][post_link.url]
-            del User._hash_cache[self.id][post_link.hash]
+            if post_link.url in User._posts_cache[self.id]:
+                del User._posts_cache[self.id][post_link.url]
+            if post_link.hash in User._hash_cache[self.id]:
+                del User._hash_cache[self.id][post_link.hash]
 
 
     def is_post_registered(self, url):
@@ -116,7 +124,7 @@ class User(Base):
     @inlineCallbacks
     def _create_hash(self, url):
         hash = unicode(md5(url).hexdigest()[:HASH_LENGTH])
-        yield self.unregister_post(hash)
+        yield self.unregister_post(hash = hash)
         returnValue(hash)
 
 
