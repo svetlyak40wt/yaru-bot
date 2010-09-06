@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: fixed
+
+
+summary: Происходит ошибка при обработке постов типа status у которых пустая нода
+  content.
+
+
+time: Mon, 06 Sep 2010 19:14:06 +0000
+

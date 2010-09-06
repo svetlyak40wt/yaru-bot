@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Ошибка на странных сообщениях типа status, но с мета-инфой 'подписался на
+  комменты'
+
+
+time: Mon, 06 Sep 2010 19:25:39 +0000
+

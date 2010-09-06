@@ -26,6 +26,9 @@ def _get_params(hash, post):
 
 
 def _strip_tags(html):
+    if not isinstance(html, basestring):
+        return html
+
     html = re.sub(r' *<br[ /]*?> *', '\n', html)
     return re.sub(r'<.*?>', '', html)
 
@@ -71,8 +74,12 @@ def _render_status(hash, post):
     content_type, content = post.content
     params['content'] = _strip_tags(_prepare_text(content))
 
-    message = u'#%(hash)s) %(author)s сменил настроение: %(content)s ' % params
-    html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
+    if params['content']:
+        message = u'#%(hash)s) %(author)s сменил настроение: %(content)s ' % params
+        html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
+    else:
+        message = u'#%(hash)s) %(author)s теперь не в настроении' % params
+        html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s теперь не в настроении' % params
     return message, html_message
 
 

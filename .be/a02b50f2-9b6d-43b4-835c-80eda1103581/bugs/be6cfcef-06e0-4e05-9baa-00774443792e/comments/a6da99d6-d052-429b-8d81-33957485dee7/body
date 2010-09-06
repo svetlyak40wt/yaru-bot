@@ -1,0 +1,23 @@
+Так выглядит XML:
+
+<entry xmlns="http://www.w3.org/2005/Atom" xmlns:y="yandex:data">
+    <id>urn:ya.ru:post/29966168/3905</id>
+    <title/>
+    <updated>2010-09-06T15:59:41Z</updated>
+    <y:access>public</y:access>
+    <author>
+      <name>mooduck</name>
+      <uri>http://mooduck81.ya.ru</uri>
+    </author>
+    <link href="https://api-yaru.yandex.ru/person/29966168/post/3905/" rel="self"/>
+    <link href="https://api-yaru.yandex.ru/person/29966168/post/3905/" rel="edit"/>
+    <link href="http://mooduck81.ya.ru/replies.xml?item_no=3905" rel="alternate"/>
+    <category term="status" scheme="urn:ya.ru:posttypes"/>
+    <y:display>
+      <y:label>&#1087;&#1086;&#1076;&#1087;&#1080;&#1089;&#1072;&#1083;&#1089;&#1103; &#1085;&#1072; &#1082;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1099;</y:label>
+    </y:display>
+    <y:meta>
+      <y:action>&#1087;&#1086;&#1076;&#1087;&#1080;&#1089;&#1072;&#1083;&#1089;&#1103; &#1085;&#1072; &#1082;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1099;</y:action>
+    </y:meta>
+    <content/>
+</entry>
