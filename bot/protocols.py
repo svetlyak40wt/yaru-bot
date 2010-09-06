@@ -186,7 +186,7 @@ class CommandsMixIn(object):
         text = u'Анонс: ' + text
 
         for user in users:
-            self.send_plain(request.jid.full(), text)
+            self.send_plain(user.jid, text)
 
         self.send_plain(request.jid.full(), u'Анонс разослан')
 
