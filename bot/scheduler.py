@@ -55,7 +55,7 @@ class Scheduler(object):
                     else:
                         start_from = datetime.datetime.utcnow()
 
-                for post in posts:
+                for post in reversed(posts):
                     if post.updated > start_from:
                         try:
                             post_link = unicode(post.get_link('self'))
