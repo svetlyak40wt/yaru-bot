@@ -8,7 +8,7 @@ import re
 
 from functools import wraps
 from . import messages, db, stats
-from . models import User, PostLink
+from . models import User
 from . api import YaRuAPI, ET
 from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
@@ -127,11 +127,12 @@ class CommandsMixIn(object):
 
     @require_auth_token
     @inlineCallbacks
-    def _cmd_reply(self, request, hash = None, text = None):
-        post_url = request.user.get_post_url_by_hash(hash)
+    def _cmd_reply(self, request, dyn_id = None, text = None):
+        dyn_id = int(dyn_id)
+        post_url = request.user.get_post_url_by_id(dyn_id)
 
         if post_url is None:
-            self.send_plain(request.jid.full(), u'Пост #%s не найден' % hash)
+            self.send_plain(request.jid.full(), u'Пост #%0.2d не найден' % dyn_id)
         else:
             api = YaRuAPI(request.user.auth_token)
             yield api.comment_post(post_url, text)
@@ -158,24 +159,28 @@ class CommandsMixIn(object):
 
     @require_auth_token
     @inlineCallbacks
-    def _cmd_forget_post(self, request, hash = None):
-        post_url = request.user.get_post_url_by_hash(hash)
+    # TODO подумать что делать с этой командой
+    def _cmd_forget_post(self, request, dyn_id = None):
+        dyn_id = int(dyn_id)
+        post_url = request.user.get_post_url_by_id(dyn_id)
 
         if post_url is None:
-            self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
+            self.send_plain(request.jid.full(), u'Пост %0.2d не найден' % dyn_id)
         else:
-            yield request.user.unregister_post(hash = hash)
+            # TODO вот здесь надо что-то другое придумать
+            yield request.user.unregister_id(dyn_id)
             self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
 
 
     @admin_only
-    def _cmd_show_xml(self, request, hash = None):
-        post = POSTS_DEBUG_CACHE.get(hash)
+    def _cmd_show_xml(self, request, dyn_id = None):
+        dyn_id = int(dyn_id)
+        post = POSTS_DEBUG_CACHE.get((request.jid.userhost(), dyn_id))
 
         if post is None:
-            self.send_plain(request.jid.full(), u'Пост %s не найден' % hash)
+            self.send_plain(request.jid.full(), u'Пост %0.2d не найден' % dyn_id)
         else:
-            self.send_plain(request.jid.full(), u'Пост %s:\r\n%s' % (hash, ET.tostring(post._xml)))
+            self.send_plain(request.jid.full(), u'Пост %0.2d:\r\n%s' % (dyn_id, ET.tostring(post._xml)))
 
 
     @admin_only
@@ -194,7 +199,10 @@ class CommandsMixIn(object):
 
     _COMMANDS = (
         ((u'help', u'помощь', u'справка'), _cmd_help),
-        ((ur'#(?P<hash>[a-z0-9]+) (?P<text>.*)',), _cmd_reply),
+        ((
+            ur'#(?P<dyn_id>[0-9]+) (?P<text>.*)',
+            ur'№(?P<dyn_id>[0-9]+) (?P<text>.*)',
+         ), _cmd_reply),
         ((ur'post (?P<text>.*)', ur'пост (?P<text>.*)'), _cmd_post_text),
         ((
             ur'link (?P<url>.+?) - (?P<title>.+?) - (?P<comment>.+)',
@@ -204,8 +212,8 @@ class CommandsMixIn(object):
             ur'link (?P<url>.+)',
             ur'ссылка (?P<url>.+)',
          ), _cmd_post_link),
-        ((ur'/f (?P<hash>[a-z0-9]+)',), _cmd_forget_post),
-        ((ur'/xml (?P<hash>[a-z0-9]+)',), _cmd_show_xml),
+        ((ur'/f (?P<dyn_id>[0-9]+)',), _cmd_forget_post),
+        ((ur'/xml (?P<dyn_id>[0-9]+)',), _cmd_show_xml),
         ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
     )
     _COMMANDS =  tuple(

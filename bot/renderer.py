@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import re
-from pdb import set_trace
 
-def render(hash, post):
+def render(dyn_id, post):
     """ Принимает объект api.Post.
         Возвращает текстовую версию поста и его HTML версию.
     """
     func = globals().get('_render_' + post.post_type, _render_generic)
-    return func(hash, post)
+    return func(dyn_id, post)
 
 
 _ya_user_re1 = re.compile(r'<ya user="(.+?)" title="(.+?)" uid="(.+?)"/>')
@@ -17,9 +16,9 @@ _img1_re = re.compile(r'<img.*?src="(.+?)".+?alt="".*?/>')
 _img2_re = re.compile(r'<img.*?src="(.+?)".+?alt="(.+?)".*?/>')
 _img3_re = re.compile(r'<img.*?src="(.+?)".*?/>')
 
-def _get_params(hash, post):
+def _get_params(dyn_id, post):
     return dict(
-        hash = hash,
+        dyn_id = dyn_id,
         author = post.author,
         post_link = post.get_link('alternate'),
     )
@@ -46,10 +45,10 @@ def _prepare_text(text):
     return text
 
 
-def _render_link(hash, post):
-    params = _get_params(hash, post)
-    message = u'#%(hash)s) %(author)s дал ссылку: ' % params
-    html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s дал ссылку: ' % params
+def _render_link(dyn_id, post):
+    params = _get_params(dyn_id, post)
+    message = u'#%(dyn_id)0.2d) %(author)s дал ссылку: ' % params
+    html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s дал ссылку: ' % params
 
     if post.title:
         message += '%s - %s' % (post.title, post.link_url)
@@ -69,24 +68,24 @@ def _render_link(hash, post):
     return message, html_message
 
 
-def _render_status(hash, post):
-    params = _get_params(hash, post)
+def _render_status(dyn_id, post):
+    params = _get_params(dyn_id, post)
     content_type, content = post.content
     params['content'] = _strip_tags(_prepare_text(content))
 
     if params['content']:
-        message = u'#%(hash)s) %(author)s сменил настроение: %(content)s ' % params
-        html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
+        message = u'#%(dyn_id)0.2d) %(author)s сменил настроение: %(content)s ' % params
+        html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
     else:
-        message = u'#%(hash)s) %(author)s теперь не в настроении' % params
-        html_message = u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s теперь не в настроении' % params
+        message = u'#%(dyn_id)0.2d) %(author)s теперь не в настроении' % params
+        html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s теперь не в настроении' % params
     return message, html_message
 
 
-def _render_congratulation(hash, post):
-    params = _get_params(hash, post)
-    message = [u'#%(hash)s) %(author)s поздравляет: ' % params]
-    html_message = [u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s поздравляет: ' % params]
+def _render_congratulation(dyn_id, post):
+    params = _get_params(dyn_id, post)
+    message = [u'#%(dyn_id)0.2d) %(author)s поздравляет: ' % params]
+    html_message = [u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s поздравляет: ' % params]
 
     content_type, content = post.content
     if content:
@@ -99,18 +98,18 @@ def _render_congratulation(hash, post):
     return message, html_message
 
 
-def _render_generic(hash, post):
+def _render_generic(dyn_id, post):
     type_ = u', ' + post.post_type
     if type_ == u', text':
         type_ = u' написал'
 
-    params = _get_params(hash, post)
+    params = _get_params(dyn_id, post)
     params['type'] = type_
     parts = [
-        u'#%(hash)s) %(author)s%(type)s: ' % params
+        u'#%(dyn_id)0.2d) %(author)s%(type)s: ' % params
     ]
     html_parts = [
-        u'#%(hash)s<a href="%(post_link)s">)</a> %(author)s%(type)s: ' % params
+        u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s%(type)s: ' % params
     ]
     title = post.title
 

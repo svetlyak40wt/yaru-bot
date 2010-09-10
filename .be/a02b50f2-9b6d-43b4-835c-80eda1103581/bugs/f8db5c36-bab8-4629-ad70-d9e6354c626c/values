@@ -4,10 +4,10 @@ creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
 reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
 
 
-severity: minor
+severity: critical
 
 
-status: open
+status: fixed
 
 
 summary: Переделать нумерацию постов с хэша на конечное число цифирок.

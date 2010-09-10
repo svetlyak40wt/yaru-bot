@@ -6,9 +6,8 @@ import datetime
 from . api import YaRuAPI, InvalidAuthToken, ET
 from . import db
 from . import stats
-from . models import User, PostLink
+from . models import User, DynamicID
 from . renderer import render
-from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
 
@@ -21,32 +20,16 @@ class Scheduler(object):
         self.reschedule_interval = config.get('reschedule_interval', 120)
 
 
-        # кэшируем уже полученные посты
+        # кэшируем запомненные ссылки
         @inlineCallbacks
-        def load_posts(store):
-            results = yield store.find(PostLink)
-            results.order_by(PostLink.user_id)
+        def load_ids(store):
+            results = yield store.find(DynamicID)
             results = yield results.all()
 
-            user_id = None
-            user_posts = {}
-            user_hashes = {}
+            for dyn_id in results:
+                User._ids_cache[dyn_id.user_id][dyn_id.id] = dyn_id.url
 
-            for post in results:
-                if post.user_id != user_id:
-                    if user_id is not None:
-                        User._posts_cache[user_id] = user_posts
-                        User._hash_cache[user_id] = user_hashes
-                    user_id = post.user_id
-                    user_posts = {}
-                    user_hashes = {}
-                user_posts[post.url] = True
-                user_hashes[post.hash] = post.url
-
-            if user_id is not None:
-                User._posts_cache[user_id] = user_posts
-                User._hash_cache[user_id] = user_hashes
-        db.pool.transact(load_posts)
+        db.pool.transact(load_ids)
 
 
 
@@ -57,47 +40,48 @@ class Scheduler(object):
             user.attach(store)
             try:
                 api = YaRuAPI(user.auth_token)
-
                 posts = yield api.get_friend_feed()
-
-                for post in posts:
-                    try:
-                        post_date = post.updated
-                        post_link = unicode(post.get_link('self'))
-
-                        registered = user.is_post_registered(post_link)
-                        if registered:
-                            #log.msg('ignoring "%s"' % post_link)
-                            # не показываем посты которые уже были показаны
-                            continue
-
-                        post_link = yield user.register_post(post_link)
-
-                        message, html_message = render(post_link.hash, post)
-
-                        log.msg('Post %s: %s' % (post_link.hash.encode('utf-8'), html_message.encode('utf-8')))
-                        self.bot.send_html(user.jid, message, html_message)
-
-                        POSTS_DEBUG_CACHE[post_link.hash] = post
-                        stats.STATS['posts_processed'] += 1
-                    except Exception, e:
-                        log.msg('ERROR in post processing for %s: %s' % (
-                                user.jid,
-                                ET.tostring(post._xml)
-                            )
-                        )
-                        log.err()
-                        stats.STATS['posts_processed'] -= 1
-                        stats.STATS['posts_failed'] += 1
-                        if isinstance(post_link, unicode):
-                            yield user.unregister_post(url = post_link)
-                        else:
-                            yield user.unregister_post(hash = post_link.hash)
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
                 user.updated_at = datetime.datetime.utcnow()
                 stats.STATS['unsubscribed'] += 1
+            else:
+
+                start_from = user.last_post_at
+                if start_from is None:
+                    if posts:
+                        start_from = posts[0].updated - datetime.timedelta(0, 1)
+                    else:
+                        start_from = datetime.datetime.utcnow()
+
+                for post in posts:
+                    if post.updated > start_from:
+                        try:
+                            post_link = unicode(post.get_link('self'))
+                            dyn_id = None
+                            dyn_id = yield user.register_url(post_link)
+
+                            message, html_message = render(dyn_id.id, post)
+
+                            log.msg((u'User %s, post %s: %s' % (user.jid, dyn_id.id, html_message)).encode('utf-8'))
+                            self.bot.send_html(user.jid, message, html_message)
+
+                            POSTS_DEBUG_CACHE[(user.id, dyn_id.id)] = post
+                            stats.STATS['posts_processed'] += 1
+                            user.last_post_at = post.updated
+
+                        except Exception, e:
+                            log.msg('ERROR in post processing for %s: %s' % (
+                                    user.jid,
+                                    ET.tostring(post._xml)
+                                )
+                            )
+                            log.err()
+                            stats.STATS['posts_processed'] -= 1
+                            stats.STATS['posts_failed'] += 1
+                            yield user.unregister_id(dyn_id)
+                            break
 
             user.next_poll_at = \
                 datetime.datetime.utcnow() + \

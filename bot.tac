@@ -10,7 +10,6 @@ from bot import db
 from bot.protocols import MessageProtocol, PresenceProtocol
 from bot.web import Index, Auth
 from bot.scheduler import Scheduler
-from pdb import set_trace
 from twisted.application import service
 from twisted.application.internet import TCPServer
 from twisted.internet import task
@@ -76,7 +75,7 @@ def init_scheduler(ignore):
 
     if not config['bot'].get('disable_post_processing'):
         task.LoopingCall(process_new_posts).start(
-            config['bot']['polling_interval'],
+            config['api']['polling_interval'],
             now = False
         )
 

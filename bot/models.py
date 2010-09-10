@@ -3,15 +3,13 @@ import datetime
 
 from collections import defaultdict
 from bot import db
-from hashlib import md5
-from pdb import set_trace
 from storm.locals import Int, Unicode, DateTime, Bool, Date
 from storm.twisted.store import DeferredStore as Store
 from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.python import log
 
-HASH_LENGTH = 3
+MAX_DYN_ID = 99
 
 
 from storm import properties, info
@@ -70,9 +68,11 @@ class User(Base):
     updated_at = DateTime(default = None)
     lastseen_at = DateTime(default = None)
     next_poll_at = DateTime(default = None)
+    last_post_at = DateTime(default = None)
+    last_comment_at = DateTime(default = None)
 
-    _posts_cache = defaultdict(dict)
-    _hash_cache = defaultdict(dict)
+    _last_dyn_ids_cache = dict()
+    _ids_cache = defaultdict(dict)
 
     def __init__(self, jid = None):
         self.jid = jid
@@ -83,69 +83,80 @@ class User(Base):
         self.next_poll_at = now
 
 
-    @inlineCallbacks
-    def register_post(self, url):
-        hash = yield self._create_hash(url)
-
-        post_link = PostLink(url, hash)
-        yield self.posts.add(post_link)
-        User._posts_cache[self.id][url] = True
-        User._hash_cache[self.id][post_link.hash] = url
-        returnValue(post_link)
+    def __storm_pre_flush__(self):
+        self.updated_at = datetime.datetime.utcnow()
 
 
     @inlineCallbacks
-    def unregister_post(self, hash = None, url = None):
-        if hash is not None:
-            results = yield self.posts.find(PostLink.hash == hash)
-        elif url is not None:
-            results = yield self.posts.find(PostLink.url == url)
+    def register_url(self, url):
+        last_id = User._last_dyn_ids_cache.get(self.id)
+
+        if last_id is None:
+            result = yield self.dynamic_ids.find()
+            result.order_by(DynamicID.updated_at, DynamicID.id)
+            result.config(limit = 1)
+            result = yield result.one()
+
+            if result is None:
+                last_id = -1
+            else:
+                last_id = result.id
+
+        next_id = last_id + 1
+        if next_id > MAX_DYN_ID:
+            next_id = 0
+
+        result = yield self.dynamic_ids.find(id = next_id)
+        id_obj = yield result.one()
+
+        if id_obj is None:
+            id_obj = DynamicID(next_id, url)
+            self.dynamic_ids.add(id_obj)
         else:
-            return
+            id_obj.url = url
 
-        post_link = yield results.one()
+        User._last_dyn_ids_cache[self.id] = next_id
+        User._ids_cache[self.id][next_id] = url
 
-        if post_link is not None:
-            yield results.remove()
-            if post_link.url in User._posts_cache[self.id]:
-                del User._posts_cache[self.id][post_link.url]
-            if post_link.hash in User._hash_cache[self.id]:
-                del User._hash_cache[self.id][post_link.hash]
-
-
-    def is_post_registered(self, url):
-        return url in User._posts_cache[self.id]
-
-
-    def get_post_url_by_hash(self, hash):
-        return User._hash_cache[self.id].get(hash)
+        returnValue(id_obj)
 
 
     @inlineCallbacks
-    def _create_hash(self, url):
-        hash = unicode(md5(url).hexdigest()[:HASH_LENGTH])
-        yield self.unregister_post(hash = hash)
-        returnValue(hash)
+    def unregister_id(self, dyn_id):
+        if dyn_id is not None:
+            if isinstance(dyn_id, DynamicID):
+                dyn_id = dyn_id.id
+
+            User._last_dyn_ids_cache[self.id] -= 1
+            del User._ids_cache[self.id][dyn_id]
+
+            results = yield self.dynamic_ids.find(id = dyn_id)
+            yield results.remove()
+
+
+    def get_post_url_by_id(self, id):
+        return User._ids_cache[self.id].get(id)
 
 
 
-
-class PostLink(Base):
-    __storm_table__ = 'post_links'
-    __storm_primary__ = 'user_id', 'url'
-    user_id = Int()
+class DynamicID(Base):
+    __storm_table__ = 'ids'
+    __storm_primary__ = 'user_id', 'id'
+    user_id = Int(default = 0)
+    id = Int()
     url = Unicode()
-    hash = Unicode()
+    updated_at = DateTime()
+
     user = DeferredReference(user_id, User.id)
-    created_at = DateTime()
 
-    def __init__(self, url, hash):
-        self.url = unicode(url)
-        self.hash = hash
-        self.created_at = datetime.datetime.utcnow()
+    def __init__(self, id, url):
+        self.id = id
+        self.url = url
 
+    def __storm_pre_flush__(self):
+        self.updated_at = datetime.datetime.utcnow()
 
-User.posts = DeferredReferenceSet(User.id, PostLink.user_id)
+User.dynamic_ids = DeferredReferenceSet(User.id, DynamicID.user_id)
 
 
 

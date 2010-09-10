@@ -5,7 +5,6 @@ from . import db
 from . models import Stats
 from twisted.internet.defer import inlineCallbacks
 from twisted.python import log
-from pdb import set_trace
 
 _default_stats = dict(
     date = datetime.date.today(),

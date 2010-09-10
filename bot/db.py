@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from twisted.python import log
-from pdb import set_trace
 
 from storm import tracer
 from copy import copy

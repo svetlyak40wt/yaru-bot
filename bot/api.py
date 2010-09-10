@@ -5,7 +5,6 @@ import urllib2
 import datetime
 
 from lxml import etree as ET
-from pdb import set_trace
 from twisted.web import client
 from twisted.web.error import Error as WebError
 from twisted.internet.defer import inlineCallbacks, returnValue

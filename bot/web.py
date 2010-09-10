@@ -6,7 +6,6 @@ from . import messages
 from . import stats
 from . models import User
 from jinja2 import Template, Environment, PackageLoader
-from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
 from twisted.python import log
