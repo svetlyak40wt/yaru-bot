@@ -137,6 +137,7 @@ class CommandsMixIn(object):
             api = YaRuAPI(request.user.auth_token)
             yield api.comment_post(post_url, text)
             self.send_plain(request.jid.full(), u'Комментарий добавлен')
+            stats.STATS['sent_comments'] += 1
 
 
     @require_auth_token

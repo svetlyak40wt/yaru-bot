@@ -3,18 +3,19 @@ import datetime
 
 from . import db
 from . models import Stats
+from storm.properties import PropertyColumn
 from twisted.internet.defer import inlineCallbacks
 from twisted.python import log
 
-_default_stats = dict(
-    date = datetime.date.today(),
-    new_users = 0,
-    unsubscribed = 0,
-    posts_processed = 0,
-    posts_failed = 0,
-    sent_posts = 0,
-    sent_links = 0,
-)
+
+_default_stats = {}
+
+for key in dir(Stats):
+    value = getattr(Stats, key)
+    if isinstance(value, PropertyColumn):
+        _default_stats[key] = value.variable_factory()._value
+
+_default_stats['date'] = datetime.date.today()
 
 STATS = _default_stats.copy()
 _previous_stats = _default_stats.copy()

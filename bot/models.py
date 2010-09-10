@@ -169,6 +169,7 @@ class Stats(Base):
     posts_failed = Int(default = 0)
     sent_posts = Int(default = 0)
     sent_links = Int(default = 0)
+    sent_comments = Int(default = 0)
 
     def __init__(self):
         self.date = datetime.date.today()
