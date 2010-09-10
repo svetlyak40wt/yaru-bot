@@ -70,6 +70,7 @@ class User(Base):
     next_poll_at = DateTime(default = None)
     last_post_at = DateTime(default = None)
     last_comment_at = DateTime(default = None)
+    off = Bool(default = False)
 
     _last_dyn_ids_cache = dict()
     _ids_cache = defaultdict(dict)

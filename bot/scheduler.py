@@ -96,6 +96,7 @@ class Scheduler(object):
                 User,
                 User.subscribed == True,
                 User.auth_token != None,
+                User.off == False,
                 User.next_poll_at < now,
             )
             results.order_by(User.next_poll_at)

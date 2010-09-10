@@ -197,13 +197,39 @@ class CommandsMixIn(object):
         self.send_plain(request.jid.full(), u'Анонс разослан')
 
 
+    @require_auth_token
+    def _cmd_on(self, request):
+        request.user.off = False
+        self.send_plain(request.jid.full(), u'Хорошо, давай ка проверим чего там тебе понаписали!')
+
+
+    @require_auth_token
+    def _cmd_off(self, request):
+        request.user.off = True
+        self.send_plain(
+            request.jid.full(),
+            u'Как пожелаешь, мой господин, больше не будут тебя спамить!\n'
+            u'Когда освободишься, используй команду "вкл", чтобы включить меня обратно.'
+        )
+
+
+    @require_auth_token
+    def _cmd_status(self, request):
+        if request.user.off:
+            self.send_plain(request.jid.full(), u'Проверка фредленты отключена')
+        else:
+            self.send_plain(request.jid.full(), u'Выполняется проверка френдленты')
+
 
     _COMMANDS = (
-        ((u'help', u'помощь', u'справка'), _cmd_help),
+        ((u'help', u'помощь', u'справка', u'помоги .*'), _cmd_help),
         ((
             ur'#(?P<dyn_id>[0-9]+) (?P<text>.*)',
             ur'№(?P<dyn_id>[0-9]+) (?P<text>.*)',
          ), _cmd_reply),
+        ((ur'on', ur'вкл'), _cmd_on),
+        ((ur'off', ur'выкл'), _cmd_off),
+        ((ur'status', ur'статус'), _cmd_status),
         ((ur'post (?P<text>.*)', ur'пост (?P<text>.*)'), _cmd_post_text),
         ((
             ur'link (?P<url>.+?) - (?P<title>.+?) - (?P<comment>.+)',
