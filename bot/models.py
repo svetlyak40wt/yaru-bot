@@ -3,7 +3,7 @@ import datetime
 
 from collections import defaultdict
 from bot import db
-from storm.locals import Int, Unicode, DateTime, Bool, Date
+from storm.locals import Int, Unicode, DateTime, Bool, Date, Desc
 from storm.twisted.store import DeferredStore as Store
 from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -94,7 +94,7 @@ class User(Base):
 
         if last_id is None:
             result = yield self.dynamic_ids.find()
-            result.order_by(DynamicID.updated_at, DynamicID.id)
+            result.order_by(Desc(DynamicID.updated_at), DynamicID.id)
             result.config(limit = 1)
             result = yield result.one()
 
