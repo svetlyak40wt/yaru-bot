@@ -176,7 +176,7 @@ class CommandsMixIn(object):
     @admin_only
     def _cmd_show_xml(self, request, dyn_id = None):
         dyn_id = int(dyn_id)
-        post = POSTS_DEBUG_CACHE.get((request.jid.userhost(), dyn_id))
+        post = POSTS_DEBUG_CACHE.get((request.user.id, dyn_id))
 
         if post is None:
             self.send_plain(request.jid.full(), u'Пост %0.2d не найден' % dyn_id)

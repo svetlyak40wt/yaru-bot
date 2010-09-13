@@ -10,8 +10,8 @@ severity: wishlist
 status: open
 
 
-summary: Сделать поддержку vcard и аватарки.
+summary: Использовать в качестве кэша memcached.
 
 
-time: Sat, 04 Sep 2010 15:18:16 +0000
+time: Fri, 10 Sep 2010 13:26:53 +0000
 

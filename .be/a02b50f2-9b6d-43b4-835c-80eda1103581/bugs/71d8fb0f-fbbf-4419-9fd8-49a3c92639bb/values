@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: critical
+
+
+status: open
+
+
+summary: После перезапуска бота он начинает нумеровать посты с 01.
+
+
+time: Mon, 13 Sep 2010 10:53:25 +0000
+
