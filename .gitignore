@@ -13,3 +13,5 @@ parts
 config-test.yml
 kill-test.sh
 run-test.sh
+develop-eggs/
+yaru_bot.egg-info/
