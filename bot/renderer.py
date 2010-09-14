@@ -47,8 +47,8 @@ def _prepare_text(text):
 
 def _render_link(dyn_id, post):
     params = _get_params(dyn_id, post)
-    message = u'#%(dyn_id)0.2d) %(author)s дал ссылку: ' % params
-    html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s дал ссылку: ' % params
+    message = u'#%(dyn_id)0.2d %(author)s дал ссылку: ' % params
+    html_message = message
 
     if post.title:
         message += '%s - %s' % (post.title, post.link_url)
@@ -74,18 +74,16 @@ def _render_status(dyn_id, post):
     params['content'] = _strip_tags(_prepare_text(content))
 
     if params['content']:
-        message = u'#%(dyn_id)0.2d) %(author)s сменил настроение: %(content)s ' % params
-        html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s сменил настроение: %(content)s' % params
+        message = u'#%(dyn_id)0.2d %(author)s сменил настроение: %(content)s ' % params
     else:
-        message = u'#%(dyn_id)0.2d) %(author)s теперь не в настроении' % params
-        html_message = u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s теперь не в настроении' % params
-    return message, html_message
+        message = u'#%(dyn_id)0.2d %(author)s теперь не в настроении' % params
+    return message, message
 
 
 def _render_congratulation(dyn_id, post):
     params = _get_params(dyn_id, post)
-    message = [u'#%(dyn_id)0.2d) %(author)s поздравляет: ' % params]
-    html_message = [u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s поздравляет: ' % params]
+    message = [u'#%(dyn_id)0.2d %(author)s поздравляет: ' % params]
+    html_message = [message[0]]
 
     content_type, content = post.content
     if content:
@@ -106,10 +104,10 @@ def _render_generic(dyn_id, post):
     params = _get_params(dyn_id, post)
     params['type'] = type_
     parts = [
-        u'#%(dyn_id)0.2d) %(author)s%(type)s: ' % params
+        u'#%(dyn_id)0.2d %(author)s%(type)s: ' % params
     ]
     html_parts = [
-        u'#%(dyn_id)0.2d<a href="%(post_link)s">)</a> %(author)s%(type)s: ' % params
+        parts[0]
     ]
     title = post.title
 
@@ -128,6 +126,7 @@ def _render_generic(dyn_id, post):
             html_parts[0] += content
 
     parts.append(u'Источник: %(post_link)s' % params)
+    html_parts.append(u'<a href="%(post_link)s">Источник</a>.' % params)
     message = u'\n'.join(parts)
     html_message = u'<br/>'.join(html_parts)
 

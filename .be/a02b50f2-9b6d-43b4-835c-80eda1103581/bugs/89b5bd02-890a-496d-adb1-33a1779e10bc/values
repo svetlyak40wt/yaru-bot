@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: closed
+
+
+summary: Убрать скобочку после хэша, так как она мешает кликать по нему в Яндекс.Онлайн.
+
+
+time: Tue, 14 Sep 2010 06:37:45 +0000
+
