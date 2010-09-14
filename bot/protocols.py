@@ -317,7 +317,7 @@ class CommandsMixIn(object):
             ur'link (?P<url>.+)',
             ur'ссылка (?P<url>.+)',
          ), _cmd_post_link),
-        ((ur'cancel', ur'отменить', ur'отмена', ur'упс', ur'бля'), _cmd_cancel),
+        ((ur'cancel', ur'отменить', ur'отмена', ur'ой', ur'упс', ur'бля'), _cmd_cancel),
         ((ur'/f (?P<dyn_id>[0-9]+)',), _cmd_forget_post),
         ((ur'/xml (?P<dyn_id>[0-9]+)',), _cmd_show_xml),
         ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
