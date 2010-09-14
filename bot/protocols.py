@@ -158,34 +158,74 @@ class CommandsMixIn(object):
                 request.user.auth_token,
                 text
             )
-            def eb(result):
-                if isinstance(result.value, CancelledError):
-                    self.send_plain(request.jid.full(), u'Коментарий "%s" отменен' % fragment)
-
-            task.addErrback(eb)
-            request.user.add_delayed_task(task)
-            self.send_plain(
-                request.jid.full(),
-                u'Комментарий будет добавлен через %d секунд. Напиши "отмена" если передумал.' % POST_DELAY
+            self._delayed_command_end(
+                request, task,
+                u'Комментарий будет добавлен через %(delay)d секунд. Напиши "отмена" если передумал.',
+                u'Коментарий "%s" отменен' % fragment
             )
 
 
+    def _delayed_command_end(self, request, task, success_message, cancel_message):
+        """ Добавляет обработчик отмены поста/коммента, и выводит предупреждение о том,
+            что действие будет совершено не сразу, и его можно отменить.
+        """
+        def eb(result):
+            if isinstance(result.value, CancelledError):
+                self.send_plain(request.jid.full(), cancel_message)
+
+        task.addErrback(eb)
+        request.user.add_delayed_task(task)
+        self.send_plain(
+            request.jid.full(),
+            success_message % dict(delay = POST_DELAY)
+        )
+
+
     @require_auth_token
-    @inlineCallbacks
     def _cmd_post_text(self, request, text = None):
-        api = YaRuAPI(request.user.auth_token)
-        post_url = yield api.post_text(text)
-        self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
-        stats.STATS['sent_posts'] += 1
+        fragment = _get_fragment(text)
+
+        @inlineCallbacks
+        def _post(user_jid, auth_token):
+            api = YaRuAPI(auth_token)
+            post_url = yield api.post_text(text)
+            self.send_plain(user_jid, u'Пост "%s" добавлен: %s' % (fragment, post_url))
+            stats.STATS['sent_posts'] += 1
+
+        task = deferLater(
+            reactor, POST_DELAY, _post,
+            request.jid.full(),
+            request.user.auth_token,
+        )
+        self._delayed_command_end(
+            request, task,
+            u'Пост будет добавлен через %(delay)d секунд. Напиши "отмена" если передумал.',
+            u'Публикация поста "%s" отменена' % fragment
+        )
 
 
     @require_auth_token
-    @inlineCallbacks
     def _cmd_post_link(self, request, url = None, title = None, comment = None):
-        api = YaRuAPI(request.user.auth_token)
-        post_url = yield api.post_link(url, title, comment)
-        self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
-        stats.STATS['sent_links'] += 1
+        # Боремся против iChat, который присылает url как http://ya.ru [http://ya.ru]
+        url = url.split(' ', 1)[0]
+
+        @inlineCallbacks
+        def _post(user_jid, auth_token):
+            api = YaRuAPI(auth_token)
+            post_url = yield api.post_link(url, title, comment)
+            self.send_plain(user_jid, u'Ссылка "%s" добавлена: %s' % (url, post_url))
+            stats.STATS['sent_links'] += 1
+
+        task = deferLater(
+            reactor, POST_DELAY, _post,
+            request.jid.full(),
+            request.user.auth_token,
+        )
+        self._delayed_command_end(
+            request, task,
+            u'Ссылка будет добавлена через %(delay)d секунд. Напиши "отмена" если передумал.',
+            u'Публикация ссылки "%s" отменена' % url
+        )
 
 
     @require_auth_token

@@ -206,8 +206,6 @@ class YaRuAPI(object):
 
     @inlineCallbacks
     def post_link(self, url, title = None, comment = None):
-        # Боремся против iChat, который присылает url как http://ya.ru [http://ya.ru]
-        url = url.split(' ', 1)[0]
         posts_url = yield self._get_link('posts')
 
         el = ET.Element('{%(a)s}entry' % NAMESPACES)
