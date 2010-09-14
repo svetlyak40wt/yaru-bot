@@ -74,6 +74,7 @@ class User(Base):
 
     _last_dyn_ids_cache = dict()
     _ids_cache = defaultdict(dict)
+    _delayed_tasks = defaultdict(list)
 
     def __init__(self, jid = None):
         self.jid = jid
@@ -137,6 +138,28 @@ class User(Base):
 
     def get_post_url_by_id(self, id):
         return User._ids_cache[self.id].get(id)
+
+
+    def add_delayed_task(self, defer):
+        User._delayed_tasks[self.id].append(defer)
+        User._delayed_tasks[self.id] = filter(
+            lambda task: not task.called,
+            User._delayed_tasks[self.id]
+        )
+
+
+    def cancel_delayed_tasks(self):
+        tasks = filter(
+            lambda task: not task.called,
+            User._delayed_tasks[self.id]
+        )
+
+        for task in tasks:
+            task.cancel()
+
+        canceled = len(tasks)
+        User._delayed_tasks[self.id] = []
+        return canceled
 
 
 

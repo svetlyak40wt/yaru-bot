@@ -12,7 +12,9 @@ from . models import User
 from . api import YaRuAPI, ET
 from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
-from twisted.internet.defer import inlineCallbacks, returnValue, succeed
+from twisted.internet.defer import inlineCallbacks, returnValue, succeed, CancelledError
+from twisted.internet import reactor
+from twisted.internet.task import deferLater
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
@@ -24,6 +26,13 @@ from zope.interface import implements
 
 
 CHATSTATE_NS = 'http://jabber.org/protocol/chatstates'
+POST_DELAY = 15
+
+
+def _get_fragment(text):
+    if len(text) > 20:
+        return text[:20] + u'…'
+    return text
 
 
 class Request(object):
@@ -126,7 +135,6 @@ class CommandsMixIn(object):
 
 
     @require_auth_token
-    @inlineCallbacks
     def _cmd_reply(self, request, dyn_id = None, text = None):
         dyn_id = int(dyn_id)
         post_url = request.user.get_post_url_by_id(dyn_id)
@@ -134,10 +142,32 @@ class CommandsMixIn(object):
         if post_url is None:
             self.send_plain(request.jid.full(), u'Пост #%0.2d не найден' % dyn_id)
         else:
-            api = YaRuAPI(request.user.auth_token)
-            yield api.comment_post(post_url, text)
-            self.send_plain(request.jid.full(), u'Комментарий добавлен')
-            stats.STATS['sent_comments'] += 1
+            fragment = _get_fragment(text)
+
+            @inlineCallbacks
+            def _comment(user_jid, post_url, auth_token, text):
+                api = YaRuAPI(auth_token)
+                yield api.comment_post(post_url, text)
+                self.send_plain(user_jid, u'Комментарий "%s" добавлен' % fragment)
+                stats.STATS['sent_comments'] += 1
+
+            task = deferLater(
+                reactor, POST_DELAY, _comment,
+                request.jid.full(),
+                post_url,
+                request.user.auth_token,
+                text
+            )
+            def eb(result):
+                if isinstance(result.value, CancelledError):
+                    self.send_plain(request.jid.full(), u'Коментарий "%s" отменен' % fragment)
+
+            task.addErrback(eb)
+            request.user.add_delayed_task(task)
+            self.send_plain(
+                request.jid.full(),
+                u'Комментарий будет добавлен через %d секунд. Напиши "отмена" если передумал.' % POST_DELAY
+            )
 
 
     @require_auth_token
@@ -156,6 +186,14 @@ class CommandsMixIn(object):
         post_url = yield api.post_link(url, title, comment)
         self.send_plain(request.jid.full(), u'Пост добавлен: %s' % post_url)
         stats.STATS['sent_links'] += 1
+
+
+    @require_auth_token
+    def _cmd_cancel(self, request):
+        canceled = request.user.cancel_delayed_tasks()
+        if canceled == 0:
+            self.send_plain(request.jid.full(), u'Нечего отменять')
+
 
 
     @require_auth_token
@@ -239,6 +277,7 @@ class CommandsMixIn(object):
             ur'link (?P<url>.+)',
             ur'ссылка (?P<url>.+)',
          ), _cmd_post_link),
+        ((ur'cancel', ur'отменить', ur'отмена', ur'упс', ur'бля'), _cmd_cancel),
         ((ur'/f (?P<dyn_id>[0-9]+)',), _cmd_forget_post),
         ((ur'/xml (?P<dyn_id>[0-9]+)',), _cmd_show_xml),
         ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
