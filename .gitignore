@@ -1,5 +1,6 @@
 *.pyc
 .*.swp
+.swp
 *.pid
 *.log
 .vim/ide.session

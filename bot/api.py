@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib2
 import datetime
 
 from lxml import etree as ET
 from twisted.web import client
 from twisted.web.error import Error as WebError
+from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 NAMESPACES = {
@@ -135,6 +135,10 @@ class YaRuAPI(object):
             )
             returnValue(data)
         except WebError, e:
+            message = u'ERROR: YaRuAPI (%s) url="%s", body="%s"' % (
+                unicode(e), url, body
+            )
+            log.msg(message.encode('utf-8'))
             if int(e.status) == 401:
                 raise InvalidAuthToken(e)
             raise
@@ -170,23 +174,24 @@ class YaRuAPI(object):
         ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = message
         try:
             yield self._auth_request(url, ET.tostring(el))
-        except urllib2.HTTPError, e:
-            if e.code != 201:
+        except WebError, e:
+            if int(e.status) != 201:
                 raise
 
 
     @inlineCallbacks
-    def post_text(self, text):
+    def post_text(self, title = None, text = None):
         url = yield self._get_link('posts')
 
         el = ET.Element('{%(a)s}entry' % NAMESPACES)
 
-        splitted = filter(None, text.split('.', 1))
-        if len(splitted) == 2:
-            ET.SubElement(el, '{%(a)s}title' % NAMESPACES).text = splitted[0]
-            ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = splitted[1]
-        else:
+        if title:
+            ET.SubElement(el, '{%(a)s}title' % NAMESPACES).text = title
+
+        if text:
             ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = text
+        else: # TODO: Убрать, так как временная мера, пока в API не починят добавление постов без content
+            ET.SubElement(el, '{%(a)s}content' % NAMESPACES).text = u'…'
 
         ET.SubElement(
             el, '{%(a)s}category' % NAMESPACES,
@@ -194,8 +199,8 @@ class YaRuAPI(object):
         )
         try:
             result = yield self._auth_request(url, ET.tostring(el))
-        except urllib2.HTTPError, e:
-            if e.code != 201:
+        except WebError, e:
+            if int(e.status) != 201:
                 raise
 
         result = ET.fromstring(result.decode('utf-8'))
@@ -228,8 +233,8 @@ class YaRuAPI(object):
 
         try:
             result = yield self._auth_request(posts_url, ET.tostring(el))
-        except urllib2.HTTPError, e:
-            if e.code != 201:
+        except WebError, e:
+            if int(e.status) != 201:
                 raise
 
         result = ET.fromstring(result.decode('utf-8'))

@@ -157,17 +157,24 @@ class CommandsMixIn(object):
             self._delayed_command_end(
                 request, task,
                 u'Комментарий будет добавлен через %(delay)d секунд. Напиши "отмена" если передумал.',
-                u'Коментарий "%s" отменен' % fragment
+                u'Коментарий "%s" отменен' % fragment,
+                u'Произошла ошибка, комментарий "%s" не добавлен' % fragment,
             )
 
 
-    def _delayed_command_end(self, request, task, success_message, cancel_message):
+    def _delayed_command_end(self, request, task, success_message, cancel_message, error_message):
         """ Добавляет обработчик отмены поста/коммента, и выводит предупреждение о том,
             что действие будет совершено не сразу, и его можно отменить.
         """
         def eb(result):
             if isinstance(result.value, CancelledError):
                 self.send_plain(request.jid.full(), cancel_message)
+            else:
+                self.send_plain(request.jid.full(), error_message)
+                message = u'ERROR: in delayed command (%s): %s' % (
+                    unicode(result.value), request.message.toXml()
+                )
+                log.msg(message.encode('utf-8'))
 
         task.addErrback(eb)
         request.user.add_delayed_task(task)
@@ -179,13 +186,28 @@ class CommandsMixIn(object):
 
     @require_auth_token
     def _cmd_post_text(self, request, text = None):
-        fragment = _get_fragment(text)
+        # несложное преобразование текста
+        # с целью выделить заголовок
+        text = text.strip()
+        lines = text.split('\n')
+        num_lines = len(lines)
+        if num_lines > 1:
+            title = lines[0]
+            text = '\n'.join(lines[1:])
+        else:
+            title = lines[0]
+            if len(title) > 20:
+                text = title
+                title = title[:20] + u'…'
+            else:
+                text = None
 
         @inlineCallbacks
         def _post(user_jid, auth_token):
             api = YaRuAPI(auth_token)
-            post_url = yield api.post_text(text)
-            self.send_plain(user_jid, u'Пост "%s" добавлен: %s' % (fragment, post_url))
+
+            post_url = yield api.post_text(title = title, text = text)
+            self.send_plain(user_jid, u'Пост "%s" добавлен: %s' % (title, post_url))
             stats.STATS['sent_posts'] += 1
 
         task = deferLater(
@@ -195,8 +217,9 @@ class CommandsMixIn(object):
         )
         self._delayed_command_end(
             request, task,
-            u'Пост будет добавлен через %(delay)d секунд. Напиши "отмена" если передумал.',
-            u'Публикация поста "%s" отменена' % fragment
+            u'Пост будет опубликован через %(delay)d секунд. Напиши "отмена" если передумал.',
+            u'Публикация поста "%s" отменена' % title,
+            u'Произошла ошика, пост "%s" не опубликован' % title,
         )
 
 
@@ -220,7 +243,8 @@ class CommandsMixIn(object):
         self._delayed_command_end(
             request, task,
             u'Ссылка будет добавлена через %(delay)d секунд. Напиши "отмена" если передумал.',
-            u'Публикация ссылки "%s" отменена' % url
+            u'Публикация ссылки "%s" отменена' % url,
+            u'Произошла ошибка, ссылка "%s" не опубликована' % url,
         )
 
 
