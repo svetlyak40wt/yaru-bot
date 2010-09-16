@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Напоминать о том, что обновление выключено, если человек не появлялся больше
+  4 часов, а потом вышел в онлайн.
+
+
+time: Wed, 15 Sep 2010 19:53:33 +0000
+

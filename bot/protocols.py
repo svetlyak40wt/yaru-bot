@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-import datetime
-import os.path
-import pickle
 import re
 
 from functools import wraps
@@ -15,7 +12,6 @@ from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue, succeed, CancelledError
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
-from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
 from twisted.words.xish import domish

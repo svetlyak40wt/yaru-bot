@@ -1,0 +1,18 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: critical
+
+
+status: open
+
+
+summary: Пост с переносами строк, отправленный из Psi, образается и публикуется только
+  первый абзац.
+
+
+time: Wed, 15 Sep 2010 07:49:17 +0000
+

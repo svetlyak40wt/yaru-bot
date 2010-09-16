@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-from twisted.python import log
-
 from storm import tracer
-from copy import copy
-from functools import wraps, partial
 from storm.locals import create_database
 from storm.twisted.store import StorePool
 

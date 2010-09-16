@@ -8,7 +8,7 @@ from . import db
 from . import stats
 from . models import User, DynamicID
 from . renderer import render
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.python import log
 
 POSTS_DEBUG_CACHE = {}

@@ -8,13 +8,13 @@ import yaml
 
 from bot import db
 from bot.protocols import MessageProtocol, PresenceProtocol
-from bot.web import Index, Auth
+from bot.web import Index
 from bot.scheduler import Scheduler
 from twisted.application import service
 from twisted.application.internet import TCPServer
 from twisted.internet import task
 from twisted.internet.defer import DebugInfo
-from twisted.python import log, failure
+from twisted.python import failure
 from twisted.web import server
 from twisted.words.protocols.jabber.jid import JID
 from wokkel.disco import DiscoHandler

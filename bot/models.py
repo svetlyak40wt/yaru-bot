@@ -2,17 +2,13 @@
 import datetime
 
 from collections import defaultdict
-from bot import db
+from storm import info
 from storm.locals import Int, Unicode, DateTime, Bool, Date, Desc
-from storm.twisted.store import DeferredStore as Store
 from storm.twisted.wrapper import DeferredReference, DeferredReferenceSet
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.python import log
 
 MAX_DYN_ID = 99
 
-
-from storm import properties, info
 
 marker = object()
 

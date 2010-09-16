@@ -5,12 +5,8 @@ from . import db
 from . import messages
 from . import stats
 from . models import User
-from jinja2 import Template, Environment, PackageLoader
-from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.internet import reactor
-from twisted.python import log
-from twisted.web.error import NoResource
-from twisted.web.http_headers import Headers
+from jinja2 import Environment, PackageLoader
+from twisted.internet.defer import inlineCallbacks
 from twisted.web import server, resource, client
 from urllib import urlencode
 

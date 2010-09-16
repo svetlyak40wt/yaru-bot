@@ -111,7 +111,7 @@ class Post(object):
 
 
     def reply(self, message):
-        comment_post(self._api, self.get_link('self'), message)
+        self._api.comment_post(self.get_link('self'), message)
 
 
 
