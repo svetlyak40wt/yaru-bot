@@ -319,7 +319,13 @@ class CommandsMixIn(object):
         ((ur'/announce (?P<text>.*)', ur'/анонс (?P<text>.*)'), _cmd_announce),
     )
     _COMMANDS =  tuple(
-        (tuple(re.compile(alias) for alias in aliases), func)
+        (
+            tuple(
+                re.compile(alias, re.DOTALL | re.UNICODE | re.IGNORECASE)
+                for alias in aliases
+            ),
+            func
+        )
         for aliases, func in _COMMANDS
     )
 

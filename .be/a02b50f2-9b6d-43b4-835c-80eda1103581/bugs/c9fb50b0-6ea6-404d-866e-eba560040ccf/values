@@ -7,7 +7,7 @@ reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
 severity: critical
 
 
-status: open
+status: closed
 
 
 summary: Пост с переносами строк, отправленный из Psi, образается и публикуется только
