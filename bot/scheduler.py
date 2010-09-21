@@ -15,7 +15,10 @@ POSTS_DEBUG_CACHE = {}
 
 class Scheduler(object):
     def __init__(self, config, bot):
+        self.connected = False
         self.bot = bot
+        bot.scheduler = self
+
         self.num_users_in_batch = config.get('num_users_in_batch', 5)
         self.reschedule_interval = config.get('reschedule_interval', 120)
 
@@ -107,5 +110,6 @@ class Scheduler(object):
                 log.msg('Retriving posts from yaru for: %s' % user.jid)
                 db.pool.transact(process_user_posts, user.detach())
 
-        db.pool.transact(process_users)
+        if self.connected:
+            db.pool.transact(process_users)
 

@@ -406,6 +406,18 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
         super(MessageProtocol, self).__init__()
 
 
+    def connectionInitialized(self):
+        super(MessageProtocol, self).connectionInitialized()
+        log.msg('MessageProtocol connected')
+        self.scheduler.connected = True
+
+
+    def connectionLost(self, reason):
+        super(MessageProtocol, self).connectionLost(reason)
+        log.msg('MessageProtocol disconnected, reason: %s' % reason)
+        self.scheduler.connected = False
+
+
     def onMessage(self, msg):
         log.msg('onMessage call: type=%r, body=%r' % (msg.getAttribute('type'), msg.body))
         if msg.getAttribute('type') == 'chat' and hasattr(msg, 'body') and msg.body:
@@ -459,7 +471,13 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn, Helpe
 
     def connectionInitialized(self):
         super(PresenceProtocol, self).connectionInitialized()
+        log.msg('PrecenceProtocol connected')
         self.update_presence()
+
+
+    def connectionLost(self, reason):
+        super(PresenceProtocol, self).connectionLost(reason)
+        log.msg('PrecenceProtocol disconnected, reason: %s' % reason)
 
 
     def subscribeReceived(self, entity):

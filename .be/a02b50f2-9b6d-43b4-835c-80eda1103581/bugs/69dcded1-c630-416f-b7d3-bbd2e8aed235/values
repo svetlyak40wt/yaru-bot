@@ -1,0 +1,17 @@
+creator: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
+
+
+severity: minor
+
+
+status: open
+
+
+summary: Прилетают xml-not-well-formed видимо, из за html в постах. Надо санитайзить.
+
+
+time: Thu, 16 Sep 2010 08:45:55 +0000
+
