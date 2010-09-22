@@ -4,6 +4,7 @@ import simplejson
 from . import db
 from . import messages
 from . import stats
+from . import news
 from . models import User
 from jinja2 import Environment, PackageLoader
 from twisted.internet.defer import inlineCallbacks
@@ -37,6 +38,7 @@ class Index(BaseResource):
         BaseResource.__init__(self, bot)
         self.putChild('auth', Auth(bot, self.templates))
         self.putChild('ChangeLog', ChangeLog(self.templates))
+        self.putChild('ChangeLogAtom', ChangeLogAtom(self.templates))
 
 
     def getChild(self, name, request):
@@ -128,6 +130,15 @@ class ChangeLog(BaseResource):
     isLeaf = True
 
     def render_GET(self, request):
-        self.render_to_request(request, 'changelog.html')
+        self.render_to_request(request, 'changelog.html', changes = news.PUBLISHED)
+        request.finish()
+        return server.NOT_DONE_YET
+
+
+class ChangeLogAtom(BaseResource):
+    isLeaf = True
+
+    def render_GET(self, request):
+        self.render_to_request(request, 'changelog-atom.html', changes = news.PUBLISHED)
         request.finish()
         return server.NOT_DONE_YET

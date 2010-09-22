@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+    <title>Новости Ярушного Ботика</title>
+    <link href="http://yaru.svetlyak.ru/"/>
+    <updated>2003-12-13T18:30:02Z</updated>
+    <author>
+        <name>Ярушный Ботик</name>
+    </author>
+    <id>http://yaru.svetlyak.ru</id>
+
+    {% for item in changes %}
+        <entry>
+            <title>Версия {{ item.version }}</title>
+            <link href="http://yaru.svetlyak.ru/ChangeLog#v{{ item.version }}"/>
+            <id>http://yaru.svetlyak.ru/ChangeLog#v{{ item.version }}</id>
+            <updated>{{ item.date }}</updated>
+            <summary type="html">
+                &lt;ul&gt;
+                {% for line in item.lines %}
+                    &lt;li class="{{ line.cls }}"&gt;{{ line }}&lt;/li&gt;
+                {% endfor %}
+                &lt;/ul&gt;
+            </summary>
+        </entry>
+    {% endfor %}
+</feed>
