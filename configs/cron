@@ -1,0 +1,1 @@
+10 * * * * art supervisorctl -c ~/etc/supervisord.conf restart yaru-bot

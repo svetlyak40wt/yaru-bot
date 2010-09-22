@@ -441,7 +441,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
                     try:
                         yield func(self, request, **kwargs)
                     except Exception, e:
-                        log.err()
+                        log.err(e, 'ERROR in _process_request')
                         self.send_plain(request.jid.full(), u'Ошибка: %s' % e)
                         raise
                 else:

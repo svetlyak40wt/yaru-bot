@@ -10,6 +10,7 @@ from . models import User, DynamicID
 from . renderer import render
 from twisted.internet.defer import inlineCallbacks
 from twisted.python import log
+from twisted.web.error import Error as WebError
 
 POSTS_DEBUG_CACHE = {}
 
@@ -44,6 +45,8 @@ class Scheduler(object):
             try:
                 api = YaRuAPI(user.auth_token)
                 posts = yield api.get_friend_feed()
+            except WebError, e:
+                log.err(e, 'ERROR in process_user_posts')
             except InvalidAuthToken:
                 user.auth_token = None
                 user.refresh_token = None
@@ -75,12 +78,11 @@ class Scheduler(object):
                             user.last_post_at = post.updated
 
                         except Exception, e:
-                            log.msg('ERROR in post processing for %s: %s' % (
+                            log.err(e, 'ERROR in post processing for %s: %s' % (
                                     user.jid,
                                     ET.tostring(post._xml)
                                 )
                             )
-                            log.err()
                             stats.STATS['posts_processed'] -= 1
                             stats.STATS['posts_failed'] += 1
                             yield user.unregister_id(dyn_id)
