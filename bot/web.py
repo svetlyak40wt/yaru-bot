@@ -9,6 +9,8 @@ from . models import User
 from jinja2 import Environment, PackageLoader
 from twisted.internet.defer import inlineCallbacks
 from twisted.web import server, resource, client
+from twisted.python import log
+from twisted.words.protocols.jabber.jid import JID
 from urllib import urlencode
 
 
@@ -93,6 +95,7 @@ class Auth(BaseResource):
                     yield store.add(user[0])
                     stats.STATS['new_users'] += 1
 
+                    self.bot.presence.probe(JID(jid))
                     self.bot.send_plain(jid, messages.END_REGISTRATION)
                     self.render_to_request(request, 'auth-done.html', jid = jid)
                     request.finish()
@@ -100,7 +103,6 @@ class Auth(BaseResource):
                 db.pool.transact(add_user).addErrback(
                     lambda ignore: request.finish()
                 )
-
 
 
             def eb(data):

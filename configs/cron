@@ -1,1 +1,3 @@
-10 * * * * art supervisorctl -c ~/etc/supervisord.conf restart yaru-bot
+MAILTO=svetlyak.40wt@gmail.com
+*/5 * * * * art /bin/date >> /tmp/restarted
+*/30 * * * * art /home/art/env/devel/bin/supervisorctl -c /home/art/etc/supervisord.conf restart yaru-bot > /dev/null

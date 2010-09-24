@@ -9,7 +9,7 @@ import yaml
 from bot import db
 from bot.protocols import MessageProtocol, PresenceProtocol
 from bot.web import Index
-from bot.scheduler import Scheduler
+from bot import scheduler
 from twisted.application import service
 from twisted.application.internet import TCPServer
 from twisted.internet import task
@@ -53,6 +53,7 @@ message_protocol.setHandlerParent(bot)
 
 presence_protocol = PresenceProtocol(config)
 presence_protocol.setHandlerParent(bot)
+message_protocol.presence = presence_protocol
 
 DiscoHandler().setHandlerParent(bot)
 VersionHandler('yaru-bot', '0.1.3').setHandlerParent(bot)
@@ -65,19 +66,8 @@ web_server.setServiceParent(application)
 
 
 def init_scheduler(ignore):
-    scheduler = Scheduler(config.get('scheduler', {}), message_protocol)
+    scheduler.init(config.get('scheduler', {}), message_protocol)
 
-    def process_new_posts():
-        try:
-            scheduler.process_new_posts()
-        except Exception:
-            DebugInfo().failResult = failure.Failure()
-
-    if not config['bot'].get('disable_post_processing'):
-        task.LoopingCall(process_new_posts).start(
-            config['api']['polling_interval'],
-            now = False
-        )
 
 def init_stats(ignore):
     from bot.stats import save_stats, load_stats

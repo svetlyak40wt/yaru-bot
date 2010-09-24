@@ -4,10 +4,9 @@ from __future__ import with_statement, absolute_import
 import re
 
 from functools import wraps
-from . import messages, db, stats
+from . import messages, db, stats, scheduler
 from . models import User
 from . api import YaRuAPI, ET
-from . scheduler import POSTS_DEBUG_CACHE
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue, succeed, CancelledError
 from twisted.internet import reactor
@@ -274,7 +273,7 @@ class CommandsMixIn(object):
     @admin_only
     def _cmd_show_xml(self, request, dyn_id = None):
         dyn_id = int(dyn_id)
-        post = POSTS_DEBUG_CACHE.get((request.user.id, dyn_id))
+        post = scheduler.POSTS_DEBUG_CACHE.get((request.user.id, dyn_id))
 
         if post is None:
             self.send_plain(request.jid.full(), u'Пост %0.2d не найден' % dyn_id)
@@ -298,12 +297,16 @@ class CommandsMixIn(object):
     @require_auth_token
     def _cmd_on(self, request):
         request.user.off = False
+        scheduler.processors.set_off(request.jid.userhost(), request.user.off)
+
         self.send_plain(request.jid.full(), u'Хорошо, давай ка проверим чего там тебе понаписали!')
 
 
     @require_auth_token
     def _cmd_off(self, request):
         request.user.off = True
+        scheduler.processors.set_off(request.jid.userhost(), request.user.off)
+
         self.send_plain(
             request.jid.full(),
             u'Как пожелаешь, мой господин, больше не будут тебя спамить!\n'
@@ -409,13 +412,13 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
     def connectionInitialized(self):
         super(MessageProtocol, self).connectionInitialized()
         log.msg('MessageProtocol connected')
-        self.scheduler.connected = True
+        self.connected = True
 
 
     def connectionLost(self, reason):
         super(MessageProtocol, self).connectionLost(reason)
         log.msg('MessageProtocol disconnected, reason: %s' % reason)
-        self.scheduler.connected = False
+        self.connected = False
 
 
     def onMessage(self, msg):
@@ -441,7 +444,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
                     try:
                         yield func(self, request, **kwargs)
                     except Exception, e:
-                        log.err(e, 'ERROR in _process_request')
+                        log.err(None, 'ERROR in _process_request')
                         self.send_plain(request.jid.full(), u'Ошибка: %s' % e)
                         raise
                 else:
@@ -450,11 +453,17 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
             db.pool.transact(_process_request)
 
 
+    def onError(self, msg):
+        log.msg('ERROR received for %s: %s' % (msg['from'], msg.toXml()))
+        scheduler.unavailable_user(JID(msg['from']))
+
+
     def getDiscoInfo(self, requestor, target, node):
         info = set()
         if not node:
             info.add(disco.DiscoFeature('http://jabber.org/protocol/xhtml-im'))
         return succeed(info)
+
 
     def getDiscoItems(self, requestor, target, node):
         return succeed([])
@@ -520,7 +529,32 @@ class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn, Helpe
         self.update_presence()
 
 
-    def update_presence(self):
+    def update_presence(self, recipient_jid = None):
         status = u'Мир, Дружба, Ярушка!'
-        self.available(None, None, {None: status})
+        if isinstance(recipient_jid, basestring):
+            recipient_jid = JID(recipient_jid)
+        self.available(recipient_jid, None, {None: status})
+
+
+    def probe(self, recipient, sender = None):
+        presence = xmppim.ProbePresence(recipient = recipient, sender = sender)
+        self.send(presence.toElement())
+
+
+    def availableReceived(self, entity, show = None, statuses = None, priority = 0):
+        log.msg((u'Available from %s (%s, %s, pri=%s)' % (
+            entity.full(), show, statuses, priority)).encode('utf-8')
+        )
+
+        if priority >= 0 and show not in ['xa', 'dnd']:
+            scheduler.available_user(entity)
+        else:
+            log.msg('Marking jid unavailable due to negative priority or '
+                    'being somewhat unavailable.')
+            scheduler.unavailable_user(entity)
+
+
+    def unavailableReceived(self, entity, statuses=None):
+        log.msg((u'Unavailable from %s' % entity.full()).encode('utf-8'))
+        scheduler.unavailable_user(entity)
 
