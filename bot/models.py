@@ -71,6 +71,7 @@ class User(Base):
     _last_dyn_ids_cache = dict()
     _ids_cache = defaultdict(dict)
     _delayed_tasks = defaultdict(list)
+    _retried_posts = defaultdict(set) # Списки перезапрошенных постов, для отладки командой 'forget'.
 
     def __init__(self, jid = None):
         self.jid = jid

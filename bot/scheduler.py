@@ -72,10 +72,13 @@ class Processor(set):
                 else:
                     start_from = datetime.datetime.utcnow()
 
+            retried_posts = User._retried_posts[user.id]
+
             for post in reversed(posts):
-                if post.updated > start_from:
+                post_link = unicode(post.get_link('self'))
+
+                if post.updated > start_from or post_link in retried_posts:
                     try:
-                        post_link = unicode(post.get_link('self'))
                         dyn_id = None
                         dyn_id = yield user.register_url(post_link)
 
@@ -89,6 +92,8 @@ class Processor(set):
                         POSTS_DEBUG_CACHE[(user.id, dyn_id.id)] = post
                         stats.STATS['posts_processed'] += 1
                         user.last_post_at = post.updated
+
+                        retried_posts.discard(post_link)
 
                     except Exception, e:
                         log.err(None, 'ERROR in post processing for %s: %s' % (

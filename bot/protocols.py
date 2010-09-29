@@ -256,8 +256,6 @@ class CommandsMixIn(object):
 
 
     @require_auth_token
-    @inlineCallbacks
-    # TODO подумать что делать с этой командой
     def _cmd_forget_post(self, request, dyn_id = None):
         dyn_id = int(dyn_id)
         post_url = request.user.get_post_url_by_id(dyn_id)
@@ -265,8 +263,7 @@ class CommandsMixIn(object):
         if post_url is None:
             self.send_plain(request.jid.full(), u'Пост %0.2d не найден' % dyn_id)
         else:
-            # TODO вот здесь надо что-то другое придумать
-            yield request.user.unregister_id(dyn_id)
+            User._retried_posts[request.user.id].add(post_url)
             self.send_plain(request.jid.full(), u'Слушаю и повинуюсь!')
 
 

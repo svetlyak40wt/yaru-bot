@@ -7,7 +7,7 @@ reporter: Alexander Artemenko <svetlyak.40wt@gmail.com>
 severity: fatal
 
 
-status: open
+status: wontfix
 
 
 summary: Отдельно обрабатывать редактирование поста.
