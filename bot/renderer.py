@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 import re
+from . cleaner import clean_html
 
 def render(dyn_id, post):
     """ Принимает объект api.Post.
@@ -42,6 +44,7 @@ def _prepare_text(text):
     text = _img1_re.sub(ur'Картинка: \1', text)
     text = _img2_re.sub(ur'Картинка \2: \1', text)
     text = _img3_re.sub(ur'Картинка: \1', text)
+    text = clean_html(text)
     return text
 
 

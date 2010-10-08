@@ -73,6 +73,9 @@ class Processor(set):
                     start_from = datetime.datetime.utcnow()
 
             retried_posts = User._retried_posts[user.id]
+            processed = 0
+            errors = 0
+            skipped = 0
 
             for post in reversed(posts):
                 post_link = unicode(post.get_link('self'))
@@ -94,8 +97,10 @@ class Processor(set):
                         user.last_post_at = post.updated
 
                         retried_posts.discard(post_link)
+                        processed += 1
 
                     except Exception, e:
+                        errors += 1
                         log.err(None, 'ERROR in post processing for %s: %s' % (
                                 user.jid,
                                 ET.tostring(post._xml)
@@ -105,6 +110,14 @@ class Processor(set):
                         stats.STATS['posts_failed'] += 1
                         yield user.unregister_id(dyn_id)
                         break
+                else:
+                    # log.msg('Skip: %s %s' % (post.updated > start_from, post_link in retried_posts))
+                    skipped += 1
+
+            if errors:
+                log.msg('Processed %d. Skipped %d. Errors %d.' % (processed, skipped, errors))
+            else:
+                log.msg('Processed %d. Skipped %d.' % (processed, skipped))
 
             yield store.flush()
 
