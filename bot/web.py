@@ -9,7 +9,6 @@ from . models import User
 from jinja2 import Environment, PackageLoader
 from twisted.internet.defer import inlineCallbacks
 from twisted.web import server, resource, client
-from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
 from urllib import urlencode
 
