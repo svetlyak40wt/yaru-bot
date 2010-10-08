@@ -19,16 +19,17 @@ _default_stats['date'] = datetime.date.today()
 
 STATS = _default_stats.copy()
 _previous_stats = _default_stats.copy()
+_previous_date = None
 
 
 def save_stats():
-    log.msg('Saving stats')
     @inlineCallbacks
     def _do(store):
-        global STATS
+        global STATS, _previous_stats, _previous_date
         today = datetime.date.today()
 
-        if STATS != _previous_stats:
+        if STATS != _previous_stats or today != _previous_date:
+            log.msg('Saving stats')
             stats = yield store.find(Stats, date = today)
             stats = yield stats.one()
             if stats is None:
@@ -42,6 +43,9 @@ def save_stats():
             if STATS['date'] != today:
                 STATS = _default_stats.copy()
                 STATS['date'] = today
+
+            _previous_stats = STATS.copy()
+            _previous_date = today
     db.pool.transact(_do)
 
 
