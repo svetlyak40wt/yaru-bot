@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
 import datetime
 
@@ -9,6 +10,8 @@ from twisted.web.error import Error as WebError
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue
 
+from . utils import force_str
+
 NAMESPACES = {
   'a': 'http://www.w3.org/2005/Atom',
   'y': 'yandex:data',
@@ -17,15 +20,6 @@ NAMESPACES = {
 HOST = 'https://api-yaru.yandex.ru'
 
 class InvalidAuthToken(RuntimeError): pass
-
-
-def force_str(text):
-    if isinstance(text, unicode):
-        return text.encode('utf-8')
-    if text is None:
-        return text
-    return str(text)
-
 
 
 class Post(object):

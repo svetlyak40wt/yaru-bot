@@ -6,11 +6,11 @@ import datetime
 from . api import YaRuAPI, InvalidAuthToken, ET
 from . import db
 from . import stats
+from . import log
 from . models import User, DynamicID
 from . renderer import render
 from twisted.internet import reactor, defer
 from twisted.internet.defer import inlineCallbacks
-from twisted.python import log
 from twisted.web.error import Error as WebError
 
 POSTS_DEBUG_CACHE = {}

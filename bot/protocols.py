@@ -4,14 +4,13 @@ from __future__ import with_statement, absolute_import
 import re
 
 from functools import wraps
-from . import messages, db, stats, scheduler
+from . import messages, db, stats, scheduler, log
 from . models import User
 from . api import YaRuAPI, ET
 from pdb import set_trace
 from twisted.internet.defer import inlineCallbacks, returnValue, succeed, CancelledError
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
-from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
 from twisted.words.xish import domish
 from wokkel import disco
