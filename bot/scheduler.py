@@ -94,7 +94,9 @@ class Processor(set):
 
                         POSTS_DEBUG_CACHE[(user.id, dyn_id.id)] = post
                         stats.STATS['posts_processed'] += 1
-                        user.last_post_at = post.updated
+
+                        if post.updated > user.last_post_at:
+                            user.last_post_at = post.updated
 
                         retried_posts.discard(post_link)
                         processed += 1

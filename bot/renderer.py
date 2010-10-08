@@ -14,9 +14,9 @@ def render(dyn_id, post):
 _ya_user_re1 = re.compile(r'<ya user="(.+?)" title="(.+?)" uid="(.+?)"/>')
 _ya_user_re2 = re.compile(r'<ya user="(.+?)" uid="(.+?)"/>')
 _ya_smile_re = re.compile(r'<ya-smile text="(.+?)" code=".+?" theme=".+?"/>')
-_img1_re = re.compile(r'<img.*?src="(.+?)".+?alt="".*?/>')
-_img2_re = re.compile(r'<img.*?src="(.+?)".+?alt="(.+?)".*?/>')
-_img3_re = re.compile(r'<img.*?src="(.+?)".*?/>')
+_img1_re = re.compile(r'<img.*?src="(.+?)".+?alt="".*?/>', re.DOTALL)
+_img2_re = re.compile(r'<img.*?src="(.+?)".+?alt="(.+?)".*?/>', re.DOTALL)
+_img3_re = re.compile(r'<img.*?src="(.+?)".*?/>', re.DOTALL)
 
 def _get_params(dyn_id, post):
     return dict(
@@ -38,12 +38,28 @@ def _prepare_text(text):
     if not isinstance(text, basestring):
         return text
 
+    def fix_url(url):
+        """ Чинит урл, убирая из него переводы строк и лишние пробелы. """
+        return ''.join(
+            part.strip()
+            for part in url.split('\n')
+        )
+
     text = _ya_user_re1.sub(r'<a href="http://\1.ya.ru">\2</a>', text)
     text = _ya_user_re2.sub(r'<a href="http://\1.ya.ru">\1</a>', text)
     text = _ya_smile_re.sub(r'\1', text)
-    text = _img1_re.sub(ur'Картинка: \1', text)
-    text = _img2_re.sub(ur'Картинка \2: \1', text)
-    text = _img3_re.sub(ur'Картинка: \1', text)
+    text = _img1_re.sub(
+        lambda m: ur'Картинка: %s' % fix_url(m.group(1)),
+        text
+    )
+    text = _img2_re.sub(
+        lambda m: ur'Картинка %s: %s' % (m.group(2), fix_url(m.group(1))),
+        text
+    )
+    text = _img3_re.sub(
+        lambda m: ur'Картинка: %s' % fix_url(m.group(1)),
+        text
+    )
     text = clean_html(text)
     return text
 
