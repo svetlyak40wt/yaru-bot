@@ -6,7 +6,7 @@ import locale
 import os
 import yaml
 
-from bot import db
+from bot import db, api
 from bot.protocols import MessageProtocol, PresenceProtocol
 from bot.web import Index
 from bot import scheduler
@@ -37,6 +37,10 @@ HOST = config['bot'].get('host', None)
 PORT = config['bot'].get('port', 5222)
 SECRET = config['bot']['pass']
 LOG_TRAFFIC = True
+
+api_host = config['api'].get('host')
+if api_host:
+    api.HOST = api_host
 
 
 # Set up the Twisted application

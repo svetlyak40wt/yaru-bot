@@ -14,8 +14,7 @@ NAMESPACES = {
   'y': 'yandex:data',
 }
 
-HOST = 'api-yaru.yandex.ru'
-
+HOST = 'https://api-yaru.yandex.ru'
 
 class InvalidAuthToken(RuntimeError): pass
 
@@ -120,6 +119,7 @@ class YaRuAPI(object):
         self._AUTH_TOKEN = token
 
 
+
     @inlineCallbacks
     def _auth_request(self, url, body = None):
         '''Создаёт авторизованный объект запроса.'''
@@ -147,7 +147,7 @@ class YaRuAPI(object):
     @inlineCallbacks
     def _get_link(self, rel):
         '''Возвращает URL нужного ресурса из профиля авторизованного пользователя.'''
-        f = yield self._auth_request('https://%s/me/' % HOST)
+        f = yield self._auth_request('%s/me/' % HOST)
         xml = ET.fromstring(f)
         links = xml.xpath('/y:person/y:link[@rel="%s"]' % rel, namespaces = NAMESPACES)
         returnValue(links[0].attrib['href'])

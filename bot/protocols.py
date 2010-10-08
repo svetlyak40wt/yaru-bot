@@ -31,10 +31,11 @@ def _get_fragment(text):
 
 
 class Request(object):
-    def __init__(self, message, client_id):
+    def __init__(self, message, client_id, oauth_host):
         self.message = message
         self.jid = JID(message['from'])
         self.client_id = client_id
+        self.oauth_host = oauth_host
 
 
 
@@ -82,7 +83,7 @@ def require_auth_token(func):
             self.send_plain(
                 request.jid.full(),
                 messages.REQUIRE_AUTH_TOKEN % (
-                    request.client_id, request.jid.userhost()
+                    request.oauth_host, request.client_id, request.jid.userhost()
                 )
             )
         else:
@@ -356,6 +357,9 @@ class CommandsMixIn(object):
 
 
 class HelpersMixIn(object):
+    def __init__(self):
+        self.oauth_host = self.cfg.get('oauth', {}).get('host', 'https://oauth.yandex.ru')
+
     @inlineCallbacks
     def _get_or_create_user(self, store, jid):
         user = yield store.find(User, User.jid == jid.userhost())
@@ -375,7 +379,7 @@ class HelpersMixIn(object):
             self.send_plain(
                 jid.full(),
                 messages.NEW_USER_WELCOME % (
-                    self.client_id, jid.userhost()
+                    self.oauth_host, self.client_id, jid.userhost()
                 )
             )
         returnValue((user, created))
@@ -396,7 +400,7 @@ class HelpersMixIn(object):
 
 
 
-class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn, HelpersMixIn):
+class MessageProtocol(HelpersMixIn, xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn):
     implements(IDisco)
 
     def __init__(self, cfg):
@@ -421,7 +425,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
     def onMessage(self, msg):
         log.msg('onMessage call: type=%r, body=%r' % (msg.getAttribute('type'), msg.body))
         if msg.getAttribute('type') == 'chat' and hasattr(msg, 'body') and msg.body:
-            request = Request(msg, self.client_id)
+            request = Request(msg, self.client_id, self.oauth_host)
             command = unicode(msg.body)
 
             if command == 'pdb' and \
@@ -467,7 +471,7 @@ class MessageProtocol(xmppim.MessageProtocol, MessageCreatorMixIn, CommandsMixIn
 
 
 
-class PresenceProtocol(xmppim.PresenceClientProtocol, MessageCreatorMixIn, HelpersMixIn):
+class PresenceProtocol(HelpersMixIn, xmppim.PresenceClientProtocol, MessageCreatorMixIn):
     def __init__(self, cfg):
         self.jid = cfg['bot']['jid']
         self.cfg = cfg

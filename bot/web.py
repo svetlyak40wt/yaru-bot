@@ -66,7 +66,7 @@ class Auth(BaseResource):
             code = request.args['code'][0]
 
             d = client.getPage(
-                'https://oauth.yandex.ru/token',
+                self.bot.oauth_host + '/token',
                 method = 'POST',
                 headers = {
                     'User-Agent': 'YaRu Jabber bot: http://yaru.svetlyak.ru'
