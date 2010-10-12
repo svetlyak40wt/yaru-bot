@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 import re
 from . cleaner import clean_html
+from functools import partial
 
 def render(dyn_id, post):
     """ Принимает объект api.Post.
@@ -114,6 +115,34 @@ def _render_congratulation(dyn_id, post):
     html_message = u'<br/>'.join(html_message)
     return message, html_message
 
+
+def _rndr_friend_unfriend(dyn_id, post, message_template = ''):
+    params = _get_params(dyn_id, post)
+    params['person_name'] = post.xpath('y:meta/y:person/y:name')[0].text
+    message = [message_template % params]
+    html_message = [message[0]]
+
+    content_type, content = post.content
+    if content:
+        content = _prepare_text(content)
+        message.append(_strip_tags(content))
+        html_message.append(content)
+
+    message = u'\n'.join(message)
+    html_message = u'<br/>'.join(html_message)
+    return message, html_message
+
+
+_render_friend = partial(
+    _rndr_friend_unfriend,
+    message_template = u'#%(dyn_id)0.2d %(author)s подружился с %(person_name)s'
+)
+
+
+_render_unfriend = partial(
+    _rndr_friend_unfriend,
+    message_template = u'#%(dyn_id)0.2d %(author)s поссорился с %(person_name)s'
+)
 
 def _render_generic(dyn_id, post):
     type_ = u', ' + post.post_type

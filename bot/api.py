@@ -19,6 +19,7 @@ NAMESPACES = {
 
 HOST = 'https://api-yaru.yandex.ru'
 
+
 class InvalidAuthToken(RuntimeError): pass
 
 
@@ -37,33 +38,27 @@ class Post(object):
         self._api = state[1]
 
 
+    def xpath(self, path):
+        return self._xml.xpath(path, namespaces = NAMESPACES)
+
     @property
     def post_type(self):
-        return self._xml.xpath(
-            'a:category[@scheme = "urn:ya.ru:posttypes"]',
-            namespaces = NAMESPACES
-        )[0].attrib['term']
+        return self.xpath('a:category[@scheme = "urn:ya.ru:posttypes"]')[0].attrib['term']
 
 
     @property
     def author(self):
-        return self._xml.xpath(
-            'a:author/a:name',
-            namespaces = NAMESPACES
-        )[0].text
+        return self.xpath('a:author/a:name')[0].text
 
 
     @property
     def title(self):
-        return self._xml.xpath(
-            'a:title',
-            namespaces = NAMESPACES
-        )[0].text
+        return self.xpath('a:title')[0].text
 
 
     @property
     def content(self):
-        el = self._xml.xpath('a:content', namespaces = NAMESPACES)
+        el = self.xpath('a:content')
         if not el:
             return (None, None)
         el = el[0]
@@ -75,10 +70,7 @@ class Post(object):
 
     @property
     def updated(self):
-        updated = self._xml.xpath(
-            'a:updated',
-            namespaces = NAMESPACES
-        )[0].text
+        updated = self.xpath('a:updated')[0].text
         return datetime.datetime.strptime(
             updated,
             '%Y-%m-%dT%H:%M:%SZ'
@@ -87,17 +79,14 @@ class Post(object):
 
     @property
     def link_url(self):
-        url = self._xml.xpath( 'y:meta/y:URL', namespaces = NAMESPACES)
+        url = self.xpath('y:meta/y:URL')
         if url:
             return url[0].text
         return None
 
 
     def get_link(self, rel):
-        el = self._xml.xpath(
-            'a:link[@rel="%s"]' % rel,
-            namespaces = NAMESPACES
-        )
+        el = self.xpath('a:link[@rel="%s"]' % rel)
         if el:
             return el[0].attrib['href']
         return ''
