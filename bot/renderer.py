@@ -23,8 +23,15 @@ def _get_params(dyn_id, post):
     return dict(
         dyn_id = dyn_id,
         author = post.author,
+        sex = post.xpath('a:author/y:sex')[0].text,
         post_link = post.get_link('alternate'),
     )
+
+def _sex(male_text, femail_text, sex):
+    """ Выбирает тот или иной текст в зависимости от пола. """
+    if sex == 'woman':
+        return femail_text
+    return male_text
 
 
 def _strip_tags(html):
@@ -67,7 +74,8 @@ def _prepare_text(text):
 
 def _render_link(dyn_id, post):
     params = _get_params(dyn_id, post)
-    message = u'#%(dyn_id)0.2d %(author)s дал ссылку: ' % params
+    params['action'] = _sex(u'дал', u'дала', params['sex'])
+    message = u'#%(dyn_id)0.2d %(author)s %(action)s ссылку: ' % params
     html_message = message
 
     if post.title:
@@ -92,9 +100,10 @@ def _render_status(dyn_id, post):
     params = _get_params(dyn_id, post)
     content_type, content = post.content
     params['content'] = _strip_tags(_prepare_text(content))
+    params['action'] = _sex(u'сменил', u'сменила', params['sex'])
 
     if params['content']:
-        message = u'#%(dyn_id)0.2d %(author)s сменил настроение: %(content)s ' % params
+        message = u'#%(dyn_id)0.2d %(author)s %(action)s настроение: %(content)s ' % params
     else:
         message = u'#%(dyn_id)0.2d %(author)s теперь не в настроении' % params
     return message, message
