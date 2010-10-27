@@ -20,12 +20,23 @@ NAMESPACES = {
 HOST = 'https://api-yaru.yandex.ru'
 
 
-class InvalidAuthToken(RuntimeError): pass
+class InvalidAuthToken(RuntimeError):
+    pass
 
 
-class Post(object):
-    def __init__(self, xml, api):
+
+class XPathWrapper(object):
+    def __init__(self, xml):
         self._xml = xml
+
+    def xpath(self, path):
+        return self._xml.xpath(path, namespaces = NAMESPACES)
+
+
+
+class Post(XPathWrapper):
+    def __init__(self, xml, api):
+        super(Post, self).__init__(xml)
         self._api = api
 
 
@@ -37,9 +48,6 @@ class Post(object):
         self._xml = ET.fromstring(state[0])
         self._api = state[1]
 
-
-    def xpath(self, path):
-        return self._xml.xpath(path, namespaces = NAMESPACES)
 
     @property
     def post_type(self):

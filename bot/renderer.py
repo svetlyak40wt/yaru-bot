@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 import re
 from . cleaner import clean_html
+from . api import XPathWrapper
 from functools import partial
 
 def render(dyn_id, post):
@@ -24,6 +25,7 @@ def _get_params(dyn_id, post):
         dyn_id = dyn_id,
         author = post.author,
         sex = post.xpath('a:author/y:sex')[0].text,
+        author_id = post.xpath('a:author/y:id')[0].text,
         post_link = post.get_link('alternate'),
     )
 
@@ -152,6 +154,43 @@ _render_unfriend = partial(
     _rndr_friend_unfriend,
     message_template = u'#%(dyn_id)0.2d %(author)s поссорился с %(person_name)s'
 )
+
+
+def _render_photo(dyn_id, post):
+    params = _get_params(dyn_id, post)
+    params['action'] = _sex(u'вывесил', u'вывесила', params['sex'])
+
+    images = map(XPathWrapper, post.xpath('y:meta/y:image'))
+    if len(images) > 1:
+        message = u'#%(dyn_id)0.2d %(author)s %(action)s фотки: ' % params
+    else:
+        message = u'#%(dyn_id)0.2d %(author)s %(action)s фотку: ' % params
+
+    html_message = message
+
+    for image in images:
+        image_author_id = image.xpath('y:person/y:id')[0].text
+        image_url = image.xpath('y:url')[0].text
+
+        message += '\n' + image_url
+        html_message += '<br /><a href="%s">%s</a>' % (image_url, image_url)
+
+        if image_author_id != params['author_id']:
+            image_author = image.xpath('y:person/y:name')[0].text
+            image_author_url = image.xpath('y:person/y:link[@rel="self"]')[0].text
+            message += ', ' + image_author
+            html_message += ', <a href="%s">%s</a>' % (image_author_url, image_author)
+
+    content_type, content = post.content
+    content = _prepare_text(content)
+
+    if content:
+        message += '\n' + _strip_tags(content)
+        html_message += '<br />' + content
+
+    message += u'\nИсточник: %(post_link)s' % params
+    return message, html_message
+
 
 def _render_generic(dyn_id, post):
     type_ = u', ' + post.post_type
