@@ -79,7 +79,7 @@ class Post(object):
 
     @property
     def link_url(self):
-        url = self.xpath('y:meta/y:URL')
+        url = self.xpath('y:meta/y:url')
         if url:
             return url[0].text
         return None
@@ -207,7 +207,7 @@ class YaRuAPI(object):
             ET.SubElement(el, '{%(a)s}content' % NAMESPACES)
 
         meta = ET.SubElement(el, '{%(y)s}meta' % NAMESPACES)
-        ET.SubElement(meta, '{%(y)s}URL' % NAMESPACES).text = url
+        ET.SubElement(meta, '{%(y)s}url' % NAMESPACES).text = url
 
         ET.SubElement(
             el, '{%(a)s}category' % NAMESPACES,
