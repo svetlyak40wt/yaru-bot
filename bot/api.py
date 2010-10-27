@@ -14,7 +14,7 @@ from . utils import force_str
 
 NAMESPACES = {
   'a': 'http://www.w3.org/2005/Atom',
-  'y': 'yandex:data',
+  'y': 'http://api.yandex.ru/yaru/',
 }
 
 HOST = 'https://api-yaru.yandex.ru'
